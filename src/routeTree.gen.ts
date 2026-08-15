@@ -18,6 +18,13 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
+import { Route as AuthenticatedInterviewIndexRouteImport } from './routes/_authenticated.interview.index'
+import { Route as AuthenticatedInterviewCodingRouteImport } from './routes/_authenticated.interview.coding'
+import { Route as AuthenticatedInterviewDsaRouteImport } from './routes/_authenticated.interview.dsa'
+import { Route as AuthenticatedInterviewHrRouteImport } from './routes/_authenticated.interview.hr'
+import { Route as AuthenticatedInterviewProjectRouteImport } from './routes/_authenticated.interview.project'
+import { Route as AuthenticatedInterviewSetupRouteImport } from './routes/_authenticated.interview.setup'
+import { Route as AuthenticatedInterviewTechnicalRouteImport } from './routes/_authenticated.interview.technical'
 import { Route as AuthenticatedResumeIndexRouteImport } from './routes/_authenticated.resume.index'
 import { Route as AuthenticatedResumeAnalyzeRouteImport } from './routes/_authenticated.resume.analyze'
 import { Route as AuthenticatedResumeCreateRouteImport } from './routes/_authenticated.resume.create'
@@ -66,6 +73,48 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedInterviewIndexRoute =
+  AuthenticatedInterviewIndexRouteImport.update({
+    id: '/interview/',
+    path: '/interview/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedInterviewCodingRoute =
+  AuthenticatedInterviewCodingRouteImport.update({
+    id: '/interview/coding',
+    path: '/interview/coding',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedInterviewDsaRoute =
+  AuthenticatedInterviewDsaRouteImport.update({
+    id: '/interview/dsa',
+    path: '/interview/dsa',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedInterviewHrRoute =
+  AuthenticatedInterviewHrRouteImport.update({
+    id: '/interview/hr',
+    path: '/interview/hr',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedInterviewProjectRoute =
+  AuthenticatedInterviewProjectRouteImport.update({
+    id: '/interview/project',
+    path: '/interview/project',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedInterviewSetupRoute =
+  AuthenticatedInterviewSetupRouteImport.update({
+    id: '/interview/setup',
+    path: '/interview/setup',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedInterviewTechnicalRoute =
+  AuthenticatedInterviewTechnicalRouteImport.update({
+    id: '/interview/technical',
+    path: '/interview/technical',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedResumeIndexRoute =
   AuthenticatedResumeIndexRouteImport.update({
     id: '/resume/',
@@ -94,8 +143,15 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/interview/coding': typeof AuthenticatedInterviewCodingRoute
+  '/interview/dsa': typeof AuthenticatedInterviewDsaRoute
+  '/interview/hr': typeof AuthenticatedInterviewHrRoute
+  '/interview/project': typeof AuthenticatedInterviewProjectRoute
+  '/interview/setup': typeof AuthenticatedInterviewSetupRoute
+  '/interview/technical': typeof AuthenticatedInterviewTechnicalRoute
   '/resume/analyze': typeof AuthenticatedResumeAnalyzeRoute
   '/resume/create': typeof AuthenticatedResumeCreateRoute
+  '/interview/': typeof AuthenticatedInterviewIndexRoute
   '/resume/': typeof AuthenticatedResumeIndexRoute
 }
 export interface FileRoutesByTo {
@@ -107,8 +163,15 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/interview/coding': typeof AuthenticatedInterviewCodingRoute
+  '/interview/dsa': typeof AuthenticatedInterviewDsaRoute
+  '/interview/hr': typeof AuthenticatedInterviewHrRoute
+  '/interview/project': typeof AuthenticatedInterviewProjectRoute
+  '/interview/setup': typeof AuthenticatedInterviewSetupRoute
+  '/interview/technical': typeof AuthenticatedInterviewTechnicalRoute
   '/resume/analyze': typeof AuthenticatedResumeAnalyzeRoute
   '/resume/create': typeof AuthenticatedResumeCreateRoute
+  '/interview': typeof AuthenticatedInterviewIndexRoute
   '/resume': typeof AuthenticatedResumeIndexRoute
 }
 export interface FileRoutesById {
@@ -122,8 +185,15 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/interview/coding': typeof AuthenticatedInterviewCodingRoute
+  '/_authenticated/interview/dsa': typeof AuthenticatedInterviewDsaRoute
+  '/_authenticated/interview/hr': typeof AuthenticatedInterviewHrRoute
+  '/_authenticated/interview/project': typeof AuthenticatedInterviewProjectRoute
+  '/_authenticated/interview/setup': typeof AuthenticatedInterviewSetupRoute
+  '/_authenticated/interview/technical': typeof AuthenticatedInterviewTechnicalRoute
   '/_authenticated/resume/analyze': typeof AuthenticatedResumeAnalyzeRoute
   '/_authenticated/resume/create': typeof AuthenticatedResumeCreateRoute
+  '/_authenticated/interview/': typeof AuthenticatedInterviewIndexRoute
   '/_authenticated/resume/': typeof AuthenticatedResumeIndexRoute
 }
 export interface FileRouteTypes {
@@ -137,8 +207,15 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/profile'
     | '/settings'
+    | '/interview/coding'
+    | '/interview/dsa'
+    | '/interview/hr'
+    | '/interview/project'
+    | '/interview/setup'
+    | '/interview/technical'
     | '/resume/analyze'
     | '/resume/create'
+    | '/interview/'
     | '/resume/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -150,8 +227,15 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/profile'
     | '/settings'
+    | '/interview/coding'
+    | '/interview/dsa'
+    | '/interview/hr'
+    | '/interview/project'
+    | '/interview/setup'
+    | '/interview/technical'
     | '/resume/analyze'
     | '/resume/create'
+    | '/interview'
     | '/resume'
   id:
     | '__root__'
@@ -164,8 +248,15 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
     | '/_authenticated/settings'
+    | '/_authenticated/interview/coding'
+    | '/_authenticated/interview/dsa'
+    | '/_authenticated/interview/hr'
+    | '/_authenticated/interview/project'
+    | '/_authenticated/interview/setup'
+    | '/_authenticated/interview/technical'
     | '/_authenticated/resume/analyze'
     | '/_authenticated/resume/create'
+    | '/_authenticated/interview/'
     | '/_authenticated/resume/'
   fileRoutesById: FileRoutesById
 }
@@ -243,6 +334,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/interview/': {
+      id: '/_authenticated/interview/'
+      path: '/interview'
+      fullPath: '/interview/'
+      preLoaderRoute: typeof AuthenticatedInterviewIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/interview/coding': {
+      id: '/_authenticated/interview/coding'
+      path: '/interview/coding'
+      fullPath: '/interview/coding'
+      preLoaderRoute: typeof AuthenticatedInterviewCodingRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/interview/dsa': {
+      id: '/_authenticated/interview/dsa'
+      path: '/interview/dsa'
+      fullPath: '/interview/dsa'
+      preLoaderRoute: typeof AuthenticatedInterviewDsaRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/interview/hr': {
+      id: '/_authenticated/interview/hr'
+      path: '/interview/hr'
+      fullPath: '/interview/hr'
+      preLoaderRoute: typeof AuthenticatedInterviewHrRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/interview/project': {
+      id: '/_authenticated/interview/project'
+      path: '/interview/project'
+      fullPath: '/interview/project'
+      preLoaderRoute: typeof AuthenticatedInterviewProjectRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/interview/setup': {
+      id: '/_authenticated/interview/setup'
+      path: '/interview/setup'
+      fullPath: '/interview/setup'
+      preLoaderRoute: typeof AuthenticatedInterviewSetupRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/interview/technical': {
+      id: '/_authenticated/interview/technical'
+      path: '/interview/technical'
+      fullPath: '/interview/technical'
+      preLoaderRoute: typeof AuthenticatedInterviewTechnicalRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/resume/': {
       id: '/_authenticated/resume/'
       path: '/resume'
@@ -271,8 +411,15 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedInterviewCodingRoute: typeof AuthenticatedInterviewCodingRoute
+  AuthenticatedInterviewDsaRoute: typeof AuthenticatedInterviewDsaRoute
+  AuthenticatedInterviewHrRoute: typeof AuthenticatedInterviewHrRoute
+  AuthenticatedInterviewProjectRoute: typeof AuthenticatedInterviewProjectRoute
+  AuthenticatedInterviewSetupRoute: typeof AuthenticatedInterviewSetupRoute
+  AuthenticatedInterviewTechnicalRoute: typeof AuthenticatedInterviewTechnicalRoute
   AuthenticatedResumeAnalyzeRoute: typeof AuthenticatedResumeAnalyzeRoute
   AuthenticatedResumeCreateRoute: typeof AuthenticatedResumeCreateRoute
+  AuthenticatedInterviewIndexRoute: typeof AuthenticatedInterviewIndexRoute
   AuthenticatedResumeIndexRoute: typeof AuthenticatedResumeIndexRoute
 }
 
@@ -280,8 +427,15 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedInterviewCodingRoute: AuthenticatedInterviewCodingRoute,
+  AuthenticatedInterviewDsaRoute: AuthenticatedInterviewDsaRoute,
+  AuthenticatedInterviewHrRoute: AuthenticatedInterviewHrRoute,
+  AuthenticatedInterviewProjectRoute: AuthenticatedInterviewProjectRoute,
+  AuthenticatedInterviewSetupRoute: AuthenticatedInterviewSetupRoute,
+  AuthenticatedInterviewTechnicalRoute: AuthenticatedInterviewTechnicalRoute,
   AuthenticatedResumeAnalyzeRoute: AuthenticatedResumeAnalyzeRoute,
   AuthenticatedResumeCreateRoute: AuthenticatedResumeCreateRoute,
+  AuthenticatedInterviewIndexRoute: AuthenticatedInterviewIndexRoute,
   AuthenticatedResumeIndexRoute: AuthenticatedResumeIndexRoute,
 }
 
