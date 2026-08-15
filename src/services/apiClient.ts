@@ -32,7 +32,7 @@ export async function apiRequest<T>(path: string, options: Options = {}): Promis
       "Content-Type": "application/json",
       ...(headers ?? {}),
     },
-    body: json !== undefined ? JSON.stringify(json) : rest.body,
+    body: json !== undefined ? JSON.stringify(json) : (rest.body ?? null),
   });
 
   if (response.status === 401) {
