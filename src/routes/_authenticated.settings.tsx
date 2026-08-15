@@ -74,7 +74,7 @@ function SettingsPage() {
                 <p className="text-sm text-muted-foreground">{n.description}</p>
               </div>
               <Switch
-                checked={prefs[n.id]}
+                checked={prefs[n.id] ?? false}
                 onCheckedChange={(v) => setPrefs((p) => ({ ...p, [n.id]: v }))}
                 aria-label={n.label}
               />
