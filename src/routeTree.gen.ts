@@ -18,6 +18,9 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated.dashboard'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated.profile'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated.settings'
+import { Route as AuthenticatedResumeIndexRouteImport } from './routes/_authenticated.resume.index'
+import { Route as AuthenticatedResumeAnalyzeRouteImport } from './routes/_authenticated.resume.analyze'
+import { Route as AuthenticatedResumeCreateRouteImport } from './routes/_authenticated.resume.create'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -63,6 +66,24 @@ const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedResumeIndexRoute =
+  AuthenticatedResumeIndexRouteImport.update({
+    id: '/resume/',
+    path: '/resume/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedResumeAnalyzeRoute =
+  AuthenticatedResumeAnalyzeRouteImport.update({
+    id: '/resume/analyze',
+    path: '/resume/analyze',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedResumeCreateRoute =
+  AuthenticatedResumeCreateRouteImport.update({
+    id: '/resume/create',
+    path: '/resume/create',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -73,6 +94,9 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/resume/analyze': typeof AuthenticatedResumeAnalyzeRoute
+  '/resume/create': typeof AuthenticatedResumeCreateRoute
+  '/resume/': typeof AuthenticatedResumeIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -83,6 +107,9 @@ export interface FileRoutesByTo {
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/resume/analyze': typeof AuthenticatedResumeAnalyzeRoute
+  '/resume/create': typeof AuthenticatedResumeCreateRoute
+  '/resume': typeof AuthenticatedResumeIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -95,6 +122,9 @@ export interface FileRoutesById {
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/resume/analyze': typeof AuthenticatedResumeAnalyzeRoute
+  '/_authenticated/resume/create': typeof AuthenticatedResumeCreateRoute
+  '/_authenticated/resume/': typeof AuthenticatedResumeIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -107,6 +137,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/profile'
     | '/settings'
+    | '/resume/analyze'
+    | '/resume/create'
+    | '/resume/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -117,6 +150,9 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/profile'
     | '/settings'
+    | '/resume/analyze'
+    | '/resume/create'
+    | '/resume'
   id:
     | '__root__'
     | '/'
@@ -128,6 +164,9 @@ export interface FileRouteTypes {
     | '/_authenticated/dashboard'
     | '/_authenticated/profile'
     | '/_authenticated/settings'
+    | '/_authenticated/resume/analyze'
+    | '/_authenticated/resume/create'
+    | '/_authenticated/resume/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -204,6 +243,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/resume/': {
+      id: '/_authenticated/resume/'
+      path: '/resume'
+      fullPath: '/resume/'
+      preLoaderRoute: typeof AuthenticatedResumeIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/resume/analyze': {
+      id: '/_authenticated/resume/analyze'
+      path: '/resume/analyze'
+      fullPath: '/resume/analyze'
+      preLoaderRoute: typeof AuthenticatedResumeAnalyzeRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/resume/create': {
+      id: '/_authenticated/resume/create'
+      path: '/resume/create'
+      fullPath: '/resume/create'
+      preLoaderRoute: typeof AuthenticatedResumeCreateRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
@@ -211,12 +271,18 @@ interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedResumeAnalyzeRoute: typeof AuthenticatedResumeAnalyzeRoute
+  AuthenticatedResumeCreateRoute: typeof AuthenticatedResumeCreateRoute
+  AuthenticatedResumeIndexRoute: typeof AuthenticatedResumeIndexRoute
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedResumeAnalyzeRoute: AuthenticatedResumeAnalyzeRoute,
+  AuthenticatedResumeCreateRoute: AuthenticatedResumeCreateRoute,
+  AuthenticatedResumeIndexRoute: AuthenticatedResumeIndexRoute,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
