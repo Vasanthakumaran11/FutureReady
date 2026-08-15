@@ -30,7 +30,7 @@ function SkillsPage() {
 
   return (
     <AppShell title="Skill development">
-      <JourneyStrip current="Skill gaps" />
+      <JourneyStrip current="Skill development" />
       <PageHeader
         title="Skill development"
         description="Gaps are derived from your resume, projects and the requirements of your target roles."
@@ -45,7 +45,7 @@ function SkillsPage() {
           <div className="grid gap-4 sm:grid-cols-3">
             <StatTile label="Tracked gaps" value={data.length} />
             <StatTile label="High priority" value={high} hint="Address these first" />
-            <StatTile label="Ready skills" value={data.filter((g) => g.status === "advanced").length} />
+            <StatTile label="Ready skills" value={data.filter((g) => g.status === "strong").length} />
           </div>
 
           <SectionCard title="Gap analysis" description="Requirement, your evidence and the recommended learning task.">
@@ -63,7 +63,7 @@ function SkillsPage() {
                   <p className="text-sm text-muted-foreground">Your evidence: {gap.evidence}</p>
                   <ProgressBar
                     className="mt-3"
-                    value={gap.status === "advanced" ? 90 : gap.status === "intermediate" ? 60 : 30}
+                    value={gap.status === "strong" ? 90 : gap.status === "moderate" ? 60 : 30}
                     tone={gap.priority === "high" ? "warning" : "success"}
                     label={`${gap.skill} level`}
                   />

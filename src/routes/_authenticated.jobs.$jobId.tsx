@@ -39,7 +39,7 @@ function JobDetailPage() {
 
   return (
     <AppShell title="Job details">
-      <JourneyStrip current="Job matches" />
+      <JourneyStrip current="Job matching" />
 
       {error ? <ErrorState message={error} onRetry={reload} /> : null}
       {loading && !data ? <CardsSkeleton count={3} height={160} /> : null}

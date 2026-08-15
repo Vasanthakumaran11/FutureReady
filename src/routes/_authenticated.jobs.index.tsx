@@ -45,7 +45,7 @@ function JobsPage() {
 
   return (
     <AppShell title="Job search">
-      <JourneyStrip current="Job matches" />
+      <JourneyStrip current="Job matching" />
       <PageHeader
         title="Job search"
         description="Roles are ranked by how well your skills, experience and projects match each posting."
