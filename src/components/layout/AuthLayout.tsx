@@ -1,5 +1,7 @@
-import { Sparkles } from "lucide-react";
 import type { ReactNode } from "react";
+
+import { Logo } from "@/components/common/Logo";
+import authHero from "@/assets/illustrations/auth-hero.jpg";
 
 const HIGHLIGHTS = [
   "Resume analysis and AI-assisted refinement grounded in your own experience",
@@ -18,42 +20,40 @@ export function AuthLayout({
 }) {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
-      <div className="hidden flex-col justify-between bg-primary p-10 text-primary-foreground lg:flex">
-        <div className="flex items-center gap-2">
-          <span className="flex size-8 items-center justify-center rounded-md bg-primary-foreground/15">
-            <Sparkles className="size-4" aria-hidden />
-          </span>
-          <span className="font-display text-sm font-semibold">FutureReady</span>
+      <div className="flex items-center justify-center bg-background px-6 py-12 sm:px-10">
+        <div className="w-full max-w-[440px]">
+          <div className="mb-10 flex items-center gap-2">
+            <Logo />
+            <span className="text-sm font-semibold tracking-tight">FutureReady</span>
+          </div>
+          <h1 className="text-2xl font-semibold leading-8">{title}</h1>
+          <p className="mt-2 text-sm leading-[22px] text-muted-foreground">{description}</p>
+          <div className="mt-8">{children}</div>
+        </div>
+      </div>
+
+      <div className="hidden flex-col justify-between border-l border-border bg-surface p-12 lg:flex">
+        <div className="flex flex-1 items-center justify-center">
+          <img
+            src={authHero}
+            alt=""
+            width={1024}
+            height={1280}
+            className="max-h-[440px] w-auto object-contain mix-blend-multiply"
+          />
         </div>
         <div className="max-w-md">
-          <h2 className="font-display text-3xl font-semibold leading-tight">
+          <h2 className="text-[18px] font-semibold leading-[26px]">
             One connected career journey, from profile to offer.
           </h2>
-          <ul className="mt-8 space-y-4 text-sm text-primary-foreground/85">
+          <ul className="mt-6 space-y-3 text-sm leading-[22px] text-muted-foreground">
             {HIGHLIGHTS.map((h) => (
               <li key={h} className="flex gap-3">
-                <span aria-hidden>—</span>
+                <span className="mt-2 size-1 shrink-0 rounded-full bg-primary" aria-hidden />
                 <span>{h}</span>
               </li>
             ))}
           </ul>
-        </div>
-        <p className="text-xs text-primary-foreground/70">
-          AI-powered career readiness platform
-        </p>
-      </div>
-
-      <div className="flex items-center justify-center px-4 py-12 sm:px-8">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 flex items-center gap-2 lg:hidden">
-            <span className="flex size-8 items-center justify-center rounded-md bg-primary text-primary-foreground">
-              <Sparkles className="size-4" aria-hidden />
-            </span>
-            <span className="font-display text-sm font-semibold">FutureReady</span>
-          </div>
-          <h1 className="text-2xl font-semibold">{title}</h1>
-          <p className="mt-1.5 text-sm text-muted-foreground">{description}</p>
-          <div className="mt-8">{children}</div>
         </div>
       </div>
     </div>
