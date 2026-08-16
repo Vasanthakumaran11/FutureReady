@@ -31,7 +31,7 @@ export function SelectField({
   return (
     <div className="space-y-2">
       <Label htmlFor={id}>{label}</Label>
-      <Select value={value || undefined} onValueChange={onChange}>
+      <Select {...(value ? { value } : {})} onValueChange={onChange}>
         <SelectTrigger id={id} className="h-10 rounded-sm border-border">
           <SelectValue placeholder={placeholder} />
         </SelectTrigger>
