@@ -1,4 +1,68 @@
-# Career Compass
+# FutureReady — AI-Powered Career Readiness Platform
+
+A unified career-readiness platform integrating Resume Refinement, Interview Preparation, Skill Development, AI-Powered Job Matching, and Career Analytics.
+
+---
+
+## 📁 Repository Structure
+
+```
+FutureReady/
+│
+├── frontend/          ← Lovable-generated React & TanStack Start application
+│   ├── src/           # Components, routes, hooks, services, styles
+│   ├── public/        # Static assets
+│   ├── package.json   # Frontend scripts and dependencies
+│   └── vite.config.ts # Vite & TanStack configuration
+│
+├── backend/           ← FastAPI Backend Application
+│   ├── app/
+│   │   ├── main.py        # FastAPI initialization and middleware
+│   │   ├── routes/        # API endpoint routers
+│   │   ├── models/        # Database models
+│   │   ├── schemas/       # Pydantic validation schemas
+│   │   ├── services/      # Business logic & services
+│   │   └── database/      # Database connection & sessions
+│   ├── requirements.txt   # Python dependencies
+│   ├── .env               # Environment configuration
+│   └── .env.example       # Environment template
+│
+├── README.md          # Project documentation & specification
+└── .gitignore         # Monorepo gitignore rules
+```
+
+---
+
+## 🚀 Getting Started
+
+### 1. Frontend (React / Vite)
+
+```bash
+cd frontend
+npm install # or bun install
+npm run dev # or bun dev
+```
+The frontend dev server runs on `http://localhost:5173` (or `http://localhost:3000`).
+
+### 2. Backend (FastAPI)
+
+```bash
+cd backend
+python -m venv venv
+# On Windows:
+.\venv\Scripts\activate
+# On macOS/Linux:
+# source venv/bin/activate
+
+pip install -r requirements.txt
+uvicorn app.main:app --reload --port 8000
+```
+- API Documentation: `http://localhost:8000/api/v1/docs`
+- Health Check: `http://localhost:8000/api/v1/health`
+
+---
+
+# Product Blueprint & Specification
 
 ROLE
 
@@ -20,13 +84,14 @@ Do not simplify or remove any major module from the blueprint.
 
 Do not create fake backend functionality as if it were implemented.
 
-The frontend must be designed so that a FastAPI + MongoDB backend can be connected later through REST APIs.
+The frontend must be designed so that a FastAPI + MongoDB/SQL backend can be connected through REST APIs.
 
 ==================================================
 
 1. PRODUCT PURPOSE
 
 ==================================================
+
 
 FutureReady is a unified career-readiness platform that combines:
 

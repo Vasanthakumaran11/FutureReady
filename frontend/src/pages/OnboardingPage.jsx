@@ -1,0 +1,282 @@
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
+import { useState } from "react";
+
+import { ProgressBar } from "@/components/common/indicators";
+import { MultiSelectField, SelectField } from "@/components/common/fields";
+import {
+  CAREER_FIELD_OPTIONS,
+  CERTIFICATION_OPTIONS,
+  COURSE_OPTIONS,
+  DEGREE_OPTIONS,
+  EXPERIENCE_OPTIONS,
+  LOCATION_OPTIONS,
+  ROLE_OPTIONS,
+  SKILL_OPTIONS,
+  YEAR_OPTIONS,
+} from "@/lib/options";
+import onboardingHero from "@/assets/illustrations/onboarding-welcome.jpg";
+import { BackendNotice } from "@/components/common/page";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { profileService } from "@/services/profile/profileService";
+
+const STEPS = ["Personal", "Education", "Career", "Target roles"];
+
+export function OnboardingPage() {
+  const navigate = useNavigate();
+  const [step, setStep] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({
+    name: "",
+    email: "",
+    location: "",
+    degree: "",
+    course: "",
+    institution: "",
+    graduationYear: "",
+    coursework: "",
+    experience: "",
+    field: "",
+    skills: "",
+    projects: "",
+    certifications: "",
+    major: "",
+    optional1: "",
+    optional2: "",
+  });
+
+  const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const setValue = (key) => (value) => setForm((f) => ({ ...f, [key]: value }));
+
+  const [skillList, setSkillList] = useState([]);
+
+  const canContinue =
+    (step === 0 && form.name && form.email) ||
+    (step === 1 && form.degree && form.institution) ||
+    step === 2 ||
+    (step === 3 && form.major);
+
+  const finish = async () => {
+    setSaving(true);
+    await profileService.updateTargetRoles(
+      form.major,
+      [form.optional1, form.optional2].filter(Boolean),
+    );
+    setSaving(false);
+    navigate("/dashboard");
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:py-14">
+      <img
+        src={onboardingHero}
+        alt=""
+        width={1024}
+        height={768}
+        className="mb-8 h-40 w-full object-contain"
+      />
+      <p className="text-eyebrow text-tertiary">
+        Step {step + 1} of {STEPS.length}
+      </p>
+      <h1 className="mt-2 text-2xl font-semibold leading-8 text-foreground">
+        Build your career profile
+      </h1>
+      <p className="mt-1 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+        This profile is the single source of truth for your resume, interview preparation, skill gap
+        analysis and job matching.
+      </p>
+
+      <div className="mt-6">
+        <ProgressBar value={((step + 1) / STEPS.length) * 100} label="Onboarding progress" />
+        <ol className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+          {STEPS.map((s, i) => (
+            <li
+              key={s}
+              className={i <= step ? "font-semibold text-accent" : "text-muted-foreground"}
+            >
+              {i + 1}. {s}
+            </li>
+          ))}
+        </ol>
+      </div>
+
+      <div className="mt-8 space-y-6 rounded-md border border-border bg-surface p-6 shadow-card">
+        {step === 0 ? (
+          <>
+            <Field id="name" label="Full name" value={form.name} onChange={set("name")} />
+            <Field
+              id="email"
+              label="Email"
+              type="email"
+              value={form.email}
+              onChange={set("email")}
+            />
+            <SelectField
+              id="location"
+              label="Location"
+              value={form.location}
+              onChange={setValue("location")}
+              options={LOCATION_OPTIONS}
+              placeholder="Select your location"
+            />
+          </>
+        ) : null}
+
+        {step === 1 ? (
+          <>
+            <SelectField
+              id="degree"
+              label="Degree"
+              value={form.degree}
+              onChange={setValue("degree")}
+              options={DEGREE_OPTIONS}
+              placeholder="Select your degree"
+            />
+            <SelectField
+              id="course"
+              label="Course / specialisation"
+              value={form.course}
+              onChange={setValue("course")}
+              options={COURSE_OPTIONS}
+              placeholder="Select your course"
+            />
+            <Field
+              id="institution"
+              label="Institution"
+              value={form.institution}
+              onChange={set("institution")}
+            />
+            <SelectField
+              id="graduationYear"
+              label="Year of completion"
+              value={form.graduationYear}
+              onChange={setValue("graduationYear")}
+              options={YEAR_OPTIONS}
+              placeholder="Select year"
+            />
+            <div className="space-y-2">
+              <Label htmlFor="coursework">Relevant coursework (optional)</Label>
+              <Textarea
+                id="coursework"
+                rows={3}
+                value={form.coursework}
+                onChange={set("coursework")}
+              />
+            </div>
+          </>
+        ) : null}
+
+        {step === 2 ? (
+          <>
+            <SelectField
+              id="experience"
+              label="Experience"
+              value={form.experience}
+              onChange={setValue("experience")}
+              options={EXPERIENCE_OPTIONS}
+              placeholder="Select experience level"
+            />
+            <SelectField
+              id="field"
+              label="Target career field"
+              value={form.field}
+              onChange={setValue("field")}
+              options={CAREER_FIELD_OPTIONS}
+              placeholder="Select a career field"
+            />
+            <MultiSelectField
+              label="Skills"
+              values={skillList}
+              onChange={(next) => {
+                setSkillList(next);
+                setForm((f) => ({ ...f, skills: next.join(", ") }));
+              }}
+              options={SKILL_OPTIONS}
+              hint="Select every skill you have evidence for — projects, coursework or work."
+            />
+            <div className="space-y-2">
+              <Label htmlFor="projects">Projects</Label>
+              <Textarea id="projects" rows={3} value={form.projects} onChange={set("projects")} />
+            </div>
+            <SelectField
+              id="certifications"
+              label="Certifications"
+              value={form.certifications}
+              onChange={setValue("certifications")}
+              options={CERTIFICATION_OPTIONS}
+              placeholder="Select a certification"
+            />
+          </>
+        ) : null}
+
+        {step === 3 ? (
+          <>
+            <SelectField
+              id="major"
+              label="Major job role"
+              value={form.major}
+              onChange={setValue("major")}
+              options={ROLE_OPTIONS}
+              placeholder="Select your major target role"
+            />
+            <SelectField
+              id="optional1"
+              label="Optional role 1"
+              value={form.optional1}
+              onChange={setValue("optional1")}
+              options={ROLE_OPTIONS}
+              placeholder="Select an optional role"
+            />
+            <SelectField
+              id="optional2"
+              label="Optional role 2"
+              value={form.optional2}
+              onChange={setValue("optional2")}
+              options={ROLE_OPTIONS}
+              placeholder="Select an optional role"
+            />
+            <p className="text-xs text-muted-foreground">
+              You can change your target roles at any time from Profile or Interview setup.
+            </p>
+          </>
+        ) : null}
+      </div>
+
+      <div className="mt-6 flex items-center justify-between gap-3">
+        <Button
+          variant="outline"
+          onClick={() => setStep((s) => Math.max(0, s - 1))}
+          disabled={step === 0}
+        >
+          Previous
+        </Button>
+        {step < STEPS.length - 1 ? (
+          <Button onClick={() => setStep((s) => s + 1)} disabled={!canContinue}>
+            Next
+          </Button>
+        ) : (
+          <Button onClick={() => void finish()} disabled={!canContinue || saving}>
+            {saving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
+            Finish setup
+          </Button>
+        )}
+      </div>
+      <div className="mt-4">
+        <BackendNotice />
+      </div>
+    </div>
+  );
+}
+
+function Field({ id, label, value, onChange, type = "text" }) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id}>{label}</Label>
+      <Input id={id} type={type} value={value} onChange={onChange} />
+    </div>
+  );
+}
