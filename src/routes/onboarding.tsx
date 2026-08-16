@@ -3,6 +3,19 @@ import { Loader2 } from "lucide-react";
 import { useState } from "react";
 
 import { ProgressBar } from "@/components/common/indicators";
+import { MultiSelectField, SelectField } from "@/components/common/fields";
+import {
+  CAREER_FIELD_OPTIONS,
+  CERTIFICATION_OPTIONS,
+  COURSE_OPTIONS,
+  DEGREE_OPTIONS,
+  EXPERIENCE_OPTIONS,
+  LOCATION_OPTIONS,
+  ROLE_OPTIONS,
+  SKILL_OPTIONS,
+  YEAR_OPTIONS,
+} from "@/lib/options";
+import onboardingHero from "@/assets/illustrations/onboarding-welcome.jpg";
 import { BackendNotice } from "@/components/common/page";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,6 +52,7 @@ function OnboardingPage() {
     email: "",
     location: "",
     degree: "",
+    course: "",
     institution: "",
     graduationYear: "",
     coursework: "",
@@ -54,6 +68,11 @@ function OnboardingPage() {
 
   const set = (key: keyof typeof form) => (e: { target: { value: string } }) =>
     setForm((f) => ({ ...f, [key]: e.target.value }));
+
+  const setValue = (key: keyof typeof form) => (value: string) =>
+    setForm((f) => ({ ...f, [key]: value }));
+
+  const [skillList, setSkillList] = useState<string[]>([]);
 
   const canContinue =
     (step === 0 && form.name && form.email) ||
@@ -73,8 +92,15 @@ function OnboardingPage() {
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-10 sm:py-14">
+      <img
+        src={onboardingHero}
+        alt=""
+        width={1024}
+        height={768}
+        className="mb-8 h-40 w-full object-contain"
+      />
       <p className="text-eyebrow">Step {step + 1} of {STEPS.length}</p>
-      <h1 className="mt-2 text-2xl font-semibold">Build your career profile</h1>
+      <h1 className="mt-2 text-2xl font-semibold leading-8">Build your career profile</h1>
       <p className="mt-1 text-sm text-muted-foreground">
         This profile is the single source of truth for your resume, interview preparation, skill
         gap analysis and job matching.
@@ -91,20 +117,49 @@ function OnboardingPage() {
         </ol>
       </div>
 
-      <div className="mt-8 space-y-5 rounded-lg border border-border bg-surface p-6 shadow-card">
+      <div className="mt-8 space-y-6 rounded-md border border-border bg-surface-raised p-6 shadow-card">
         {step === 0 ? (
           <>
             <Field id="name" label="Full name" value={form.name} onChange={set("name")} />
             <Field id="email" label="Email" type="email" value={form.email} onChange={set("email")} />
-            <Field id="location" label="Location" value={form.location} onChange={set("location")} />
+            <SelectField
+              id="location"
+              label="Location"
+              value={form.location}
+              onChange={setValue("location")}
+              options={LOCATION_OPTIONS}
+              placeholder="Select your location"
+            />
           </>
         ) : null}
 
         {step === 1 ? (
           <>
-            <Field id="degree" label="Degree" value={form.degree} onChange={set("degree")} />
+            <SelectField
+              id="degree"
+              label="Degree"
+              value={form.degree}
+              onChange={setValue("degree")}
+              options={DEGREE_OPTIONS}
+              placeholder="Select your degree"
+            />
+            <SelectField
+              id="course"
+              label="Course / specialisation"
+              value={form.course}
+              onChange={setValue("course")}
+              options={COURSE_OPTIONS}
+              placeholder="Select your course"
+            />
             <Field id="institution" label="Institution" value={form.institution} onChange={set("institution")} />
-            <Field id="graduationYear" label="Graduation year" value={form.graduationYear} onChange={set("graduationYear")} />
+            <SelectField
+              id="graduationYear"
+              label="Year of completion"
+              value={form.graduationYear}
+              onChange={setValue("graduationYear")}
+              options={YEAR_OPTIONS}
+              placeholder="Select year"
+            />
             <div className="space-y-2">
               <Label htmlFor="coursework">Relevant coursework (optional)</Label>
               <Textarea id="coursework" rows={3} value={form.coursework} onChange={set("coursework")} />
@@ -114,25 +169,73 @@ function OnboardingPage() {
 
         {step === 2 ? (
           <>
-            <Field id="experience" label="Experience (years or summary)" value={form.experience} onChange={set("experience")} />
-            <Field id="field" label="Target career field" value={form.field} onChange={set("field")} />
-            <div className="space-y-2">
-              <Label htmlFor="skills">Skills (comma separated)</Label>
-              <Textarea id="skills" rows={2} value={form.skills} onChange={set("skills")} />
-            </div>
+            <SelectField
+              id="experience"
+              label="Experience"
+              value={form.experience}
+              onChange={setValue("experience")}
+              options={EXPERIENCE_OPTIONS}
+              placeholder="Select experience level"
+            />
+            <SelectField
+              id="field"
+              label="Target career field"
+              value={form.field}
+              onChange={setValue("field")}
+              options={CAREER_FIELD_OPTIONS}
+              placeholder="Select a career field"
+            />
+            <MultiSelectField
+              label="Skills"
+              values={skillList}
+              onChange={(next) => {
+                setSkillList(next);
+                setForm((f) => ({ ...f, skills: next.join(", ") }));
+              }}
+              options={SKILL_OPTIONS}
+              hint="Select every skill you have evidence for — projects, coursework or work."
+            />
             <div className="space-y-2">
               <Label htmlFor="projects">Projects</Label>
               <Textarea id="projects" rows={3} value={form.projects} onChange={set("projects")} />
             </div>
-            <Field id="certifications" label="Certifications" value={form.certifications} onChange={set("certifications")} />
+            <SelectField
+              id="certifications"
+              label="Certifications"
+              value={form.certifications}
+              onChange={setValue("certifications")}
+              options={CERTIFICATION_OPTIONS}
+              placeholder="Select a certification"
+            />
           </>
         ) : null}
 
         {step === 3 ? (
           <>
-            <Field id="major" label="Major job role" value={form.major} onChange={set("major")} />
-            <Field id="optional1" label="Optional role 1" value={form.optional1} onChange={set("optional1")} />
-            <Field id="optional2" label="Optional role 2" value={form.optional2} onChange={set("optional2")} />
+            <SelectField
+              id="major"
+              label="Major job role"
+              value={form.major}
+              onChange={setValue("major")}
+              options={ROLE_OPTIONS}
+              placeholder="Select your major target role"
+            />
+            <SelectField
+              id="optional1"
+              label="Optional role 1"
+              value={form.optional1}
+              onChange={setValue("optional1")}
+              options={ROLE_OPTIONS}
+              placeholder="Select an optional role"
+            />
+            <SelectField
+              id="optional2"
+              label="Optional role 2"
+              value={form.optional2}
+              onChange={setValue("optional2")}
+              options={ROLE_OPTIONS}
+              placeholder="Select an optional role"
+            />
             <p className="text-xs text-muted-foreground">
               You can change your target roles at any time from Profile or Interview setup.
             </p>
