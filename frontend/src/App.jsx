@@ -3,6 +3,7 @@ import { ThemeProvider } from "@/hooks/useTheme";
 import { AuthProvider } from "@/hooks/useAuth";
 import { Toaster } from "@/components/ui/sonner";
 
+import { LandingPage } from "@/pages/LandingPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { ResumeIndexPage } from "@/pages/ResumeIndexPage";
 import { ResumeAnalyzePage } from "@/pages/ResumeAnalyzePage";
@@ -31,8 +32,8 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-            {/* Entry Redirect */}
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            {/* Entry Landing Page */}
+            <Route path="/" element={<LandingPage />} />
 
             {/* Auth Routes */}
             <Route path="/login" element={<LoginPage />} />
@@ -72,7 +73,7 @@ export default function App() {
             <Route path="/settings" element={<SettingsPage />} />
 
             {/* Catch-all fallback */}
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </BrowserRouter>
         <Toaster position="top-right" richColors />

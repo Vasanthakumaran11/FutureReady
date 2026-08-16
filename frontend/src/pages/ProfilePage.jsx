@@ -149,16 +149,6 @@ export function ProfilePage() {
 
       {data ? (
         <>
-          <SectionCard
-            title="Profile completeness"
-            description="Complete sections improve match accuracy and calculate your live readiness score."
-          >
-            <div className="flex items-center gap-4">
-              <ProgressBar value={completeness} label="Profile completeness" />
-              <span className="shrink-0 text-sm font-semibold">{completeness}%</span>
-            </div>
-          </SectionCard>
-
           <div className="grid gap-4 xl:grid-cols-2">
             {/* Personal Info */}
             <SectionCard

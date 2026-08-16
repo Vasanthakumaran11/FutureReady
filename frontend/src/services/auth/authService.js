@@ -23,6 +23,17 @@ export const authService = {
     return res.user;
   },
 
+  async loginWithGoogle(payload) {
+    const res = await apiRequest("/auth/google", {
+      method: "POST",
+      json: payload,
+    });
+    if (res?.session_token) {
+      setSessionToken(res.session_token);
+    }
+    return res.user;
+  },
+
   async getCurrentUser() {
     const token = getSessionToken();
     if (!token) return null;

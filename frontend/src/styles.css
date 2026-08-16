@@ -103,36 +103,36 @@
   --bg-canvas: #fbfbfa;
   --bg-surface: #ffffff;
   --bg-surface-hover: #f5f4f1;
-  --border-default: #e9e8e4;
-  --border-strong: #d9d8d3;
-  --text-primary: #2b2925;
-  --text-secondary: #6f6e69;
-  --text-tertiary: #a19f98;
+  --border-default: #e4e2dc;
+  --border-strong: #cecbc3;
+  --text-primary: #181715;
+  --text-secondary: #45443f;
+  --text-tertiary: #67655f;
   --accent: #3b5fe0;
   --accent-subtle: #eaeefc;
 
-  --success: #4f9768;
+  --success: #2e7d4a;
   --success-bg: #eaf3ec;
-  --warning: #c98a2c;
+  --warning: #b27318;
   --warning-bg: #fbf1e2;
-  --danger: #c0564b;
+  --danger: #b83a2d;
   --danger-bg: #fbeae8;
-  --info: #3e8e8e;
+  --info: #2a7a7a;
   --info-bg: #e9f4f4;
 }
 
 .dark {
   /* DARK MODE TOKENS */
-  --bg-canvas: #191918;
-  --bg-surface: #212120;
-  --bg-surface-hover: #2a2a28;
-  --border-default: #2f2f2d;
-  --border-strong: #3a3a37;
-  --text-primary: #edece9;
-  --text-secondary: #a6a5a0;
-  --text-tertiary: #757471;
+  --bg-canvas: #141413;
+  --bg-surface: #1e1e1d;
+  --bg-surface-hover: #292927;
+  --border-default: #333330;
+  --border-strong: #444440;
+  --text-primary: #f8f7f4;
+  --text-secondary: #cbc9c1;
+  --text-tertiary: #a19f97;
   --accent: #6e8ff0;
-  --accent-subtle: #23293d;
+  --accent-subtle: #202638;
 
   --success: #6fbb86;
   --success-bg: #1c2a21;

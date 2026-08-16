@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { Check, FileText, Loader2, Sparkles, UserCheck } from "lucide-react";
+import { Check, ChevronDown, FileText, Loader2, Plus, Sparkles, UserCheck, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
@@ -30,6 +30,80 @@ const TEMPLATES = [
   { id: "modern", name: "Modern", note: "Single column with a skills sidebar block." },
 ];
 
+const TARGET_ROLE_OPTIONS = [
+  "Full Stack Developer",
+  "Backend Software Engineer",
+  "Frontend Engineer",
+  "DevOps / Cloud Engineer",
+  "Data Scientist / ML Engineer",
+  "Mobile App Developer (iOS / Android)",
+  "Cybersecurity Analyst",
+  "QA / Automation Engineer",
+  "Systems & Network Engineer",
+  "Product Engineer",
+];
+
+const DEGREE_OPTIONS = [
+  "B.Tech / B.E. in Computer Science & Engineering",
+  "B.Tech / B.E. in Information Technology",
+  "B.Tech / B.E. in Artificial Intelligence & Data Science",
+  "B.Tech / B.E. in Electronics & Communication",
+  "B.Tech / B.E. in Electrical & Electronics",
+  "B.Sc / BCA in Computer Science",
+  "M.Tech / M.E. in Computer Science",
+  "MCA (Master of Computer Applications)",
+  "Diploma in Computer Engineering",
+  "Other / Custom Degree",
+];
+
+const GRADUATION_YEAR_OPTIONS = [
+  "2029",
+  "2028",
+  "2027",
+  "2026",
+  "2025",
+  "2024",
+  "2023",
+  "2022",
+  "2021",
+];
+
+const POPULAR_SKILLS = {
+  Languages: ["Python", "JavaScript", "TypeScript", "Java", "C++", "C#", "Go", "SQL"],
+  Frontend: ["React", "Next.js", "HTML5", "CSS3", "Tailwind CSS", "Redux", "Vue.js"],
+  Backend: ["FastAPI", "Node.js", "Express.js", "Django", "Flask", "Spring Boot", "REST APIs"],
+  Databases: ["PostgreSQL", "MongoDB", "MySQL", "Redis", "SQLite"],
+  "Cloud & DevOps": [
+    "Docker",
+    "Kubernetes",
+    "AWS",
+    "Google Cloud (GCP)",
+    "Azure",
+    "CI/CD",
+    "Git",
+    "Linux",
+  ],
+  "AI / ML": [
+    "Machine Learning",
+    "Deep Learning",
+    "TensorFlow",
+    "PyTorch",
+    "Pandas",
+    "Scikit-Learn",
+  ],
+};
+
+const POPULAR_CERTS = [
+  "AWS Certified Solutions Architect - Associate",
+  "AWS Certified Developer - Associate",
+  "Google Cloud Associate Cloud Engineer",
+  "Meta Frontend Developer Professional Certificate",
+  "Microsoft Certified: Azure Fundamentals (AZ-900)",
+  "MongoDB Certified Developer Associate",
+  "Postman API Fundamentals Student Expert",
+  "Docker Certified Associate (DCA)",
+];
+
 export function ResumeCreatePage() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -50,12 +124,12 @@ export function ResumeCreatePage() {
     summary: "",
     degree: "",
     institution: "",
-    graduationYear: "",
+    graduationYear: "2026",
     skills: "",
     projects: "",
     experience: "",
     certifications: "",
-    targetRole: "",
+    targetRole: "Full Stack Developer",
   });
   const [errors, setErrors] = useState({});
   const [aiSummary, setAiSummary] = useState(null);
@@ -76,7 +150,7 @@ export function ResumeCreatePage() {
             phone: prof.phone || "",
             location: prof.location || "",
             skills: skillsString || prev.skills,
-            targetRole: prof.targetRoles?.major || "",
+            targetRole: prof.targetRoles?.major || prev.targetRole || "Full Stack Developer",
           }));
         }
       } catch {
@@ -87,6 +161,38 @@ export function ResumeCreatePage() {
   }, [user]);
 
   const set = (key) => (e) => setValues((v) => ({ ...v, [key]: e.target.value }));
+
+  const toggleSkill = (skill) => {
+    const currentList = values.skills
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (currentList.includes(skill)) {
+      setValues((v) => ({
+        ...v,
+        skills: currentList.filter((s) => s !== skill).join(", "),
+      }));
+    } else {
+      setValues((v) => ({
+        ...v,
+        skills: [...currentList, skill].join(", "),
+      }));
+    }
+  };
+
+  const addCert = (cert) => {
+    const currentList = values.certifications
+      .split(",")
+      .map((c) => c.trim())
+      .filter(Boolean);
+    if (!currentList.includes(cert)) {
+      setValues((v) => ({
+        ...v,
+        certifications: [...currentList, cert].join(", "),
+      }));
+      toast.success(`Added ${cert}`);
+    }
+  };
 
   const validateStep = (key) => {
     const next = {};
@@ -222,9 +328,9 @@ export function ResumeCreatePage() {
           projects: values.projects
             ? [
                 {
-                  title: "Project",
+                  title: "Key Project",
                   description: values.projects,
-                  techStack: skillsList.slice(0, 3),
+                  techStack: skillsList.slice(0, 4),
                 },
               ]
             : [],
@@ -248,12 +354,16 @@ export function ResumeCreatePage() {
   };
 
   const current = STEPS[step];
+  const activeSkillsList = values.skills
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
 
   return (
     <AppShell title="Build resume">
       <PageHeader
         title="Resume builder (Skills-Driven)"
-        description="We help you build an ATS-tailored resume based on your skills and raw experience."
+        description="Select from dropdowns and let FutureReady's AI craft your ATS-ready resume."
         actions={
           <Button variant="outline" onClick={() => void saveDraft()} disabled={saving}>
             {saving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
@@ -279,33 +389,38 @@ export function ResumeCreatePage() {
       <div className="grid gap-4 xl:grid-cols-[1.4fr_1fr]">
         <SectionCard title={current.label}>
           <div className="space-y-4">
+            {/* Step 1: Personal Details */}
             {current.key === "personal" ? (
               <>
                 <Field
                   id="fullName"
-                  label="Full name"
+                  label="Full name *"
                   value={values["fullName"] ?? ""}
                   onChange={set("fullName")}
+                  placeholder="e.g. Vasantha Kumar A"
                   error={errors["fullName"]}
                 />
                 <Field
                   id="email"
-                  label="Email"
+                  label="Email address *"
                   value={values["email"] ?? ""}
                   onChange={set("email")}
+                  placeholder="e.g. vasanthakumar@example.com"
                   error={errors["email"]}
                 />
                 <Field
                   id="phone"
-                  label="Phone"
+                  label="Phone number"
                   value={values["phone"] ?? ""}
                   onChange={set("phone")}
+                  placeholder="e.g. +91 98765 43210"
                 />
                 <Field
                   id="location"
                   label="Location"
                   value={values["location"] ?? ""}
                   onChange={set("location")}
+                  placeholder="e.g. Chennai, India"
                 />
                 <div className="space-y-2">
                   <Label htmlFor="summary">Professional summary</Label>
@@ -314,7 +429,7 @@ export function ResumeCreatePage() {
                     rows={3}
                     value={values["summary"] ?? ""}
                     onChange={set("summary")}
-                    placeholder="Brief career overview..."
+                    placeholder="Brief career overview (e.g. Passionate software engineer with hands-on experience in full-stack web applications)..."
                   />
                 </div>
                 <div className="rounded-sm border border-accent/20 bg-accent-subtle/50 p-3.5">
@@ -354,49 +469,151 @@ export function ResumeCreatePage() {
               </>
             ) : null}
 
+            {/* Step 2: Education with Dropdown Selection */}
             {current.key === "education" ? (
               <>
+                <div className="space-y-1.5">
+                  <Label htmlFor="degreeSelect" className="text-xs font-medium text-secondary">
+                    Degree / Academic Qualification
+                  </Label>
+                  <select
+                    id="degreeSelect"
+                    value={DEGREE_OPTIONS.includes(values.degree) ? values.degree : "Other"}
+                    onChange={(e) => {
+                      if (e.target.value !== "Other") {
+                        setValues((v) => ({ ...v, degree: e.target.value }));
+                      }
+                    }}
+                    className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-xs text-foreground focus:border-accent focus:outline-none"
+                  >
+                    <option value="">-- Select Degree from Dropdown --</option>
+                    {DEGREE_OPTIONS.map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                    <option value="Other">Custom / Type manually...</option>
+                  </select>
+                </div>
+
                 <Field
                   id="degree"
-                  label="Degree & Branch"
+                  label="Degree Title (or customize below)"
                   value={values["degree"] ?? ""}
                   onChange={set("degree")}
-                  placeholder="e.g. B.Tech in Computer Science"
+                  placeholder="e.g. B.Tech in Computer Science and Engineering"
                 />
+
                 <Field
                   id="institution"
-                  label="Institution / University"
+                  label="Institution / University Name"
                   value={values["institution"] ?? ""}
                   onChange={set("institution")}
-                  placeholder="e.g. National Institute of Technology"
+                  placeholder="e.g. Anna University / Kongu Engineering College"
                 />
-                <Field
-                  id="graduationYear"
-                  label="Graduation year"
-                  value={values["graduationYear"] ?? ""}
-                  onChange={set("graduationYear")}
-                  placeholder="e.g. 2026"
-                />
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="gradYearSelect" className="text-xs font-medium text-secondary">
+                    Graduation Year
+                  </Label>
+                  <select
+                    id="gradYearSelect"
+                    value={values.graduationYear}
+                    onChange={set("graduationYear")}
+                    className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-xs text-foreground focus:border-accent focus:outline-none"
+                  >
+                    {GRADUATION_YEAR_OPTIONS.map((y) => (
+                      <option key={y} value={y}>
+                        {y}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </>
             ) : null}
 
+            {/* Step 3: Skills with Category Dropdown Selectors */}
             {current.key === "skills" ? (
-              <div className="space-y-2">
-                <Label htmlFor="skills">Technical & Core Skills (comma separated)</Label>
-                <Textarea
-                  id="skills"
-                  rows={4}
-                  value={values["skills"] ?? ""}
-                  onChange={set("skills")}
-                  placeholder="Python, FastAPI, React, JavaScript, SQL, PostgreSQL, Docker, Git, Tailwind CSS"
-                />
-                <p className="text-xs text-muted-foreground">
-                  The AI builder uses these skills to generate tailored bullet points in the next
-                  steps.
-                </p>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="skills">
+                    Active Selected Skills (comma separated or picked below)
+                  </Label>
+                  <Textarea
+                    id="skills"
+                    rows={3}
+                    value={values["skills"] ?? ""}
+                    onChange={set("skills")}
+                    placeholder="Python, React, FastAPI, SQL, Docker, Git..."
+                  />
+                </div>
+
+                <div className="rounded-sm border border-border bg-surface-hover/30 p-4 space-y-4">
+                  <p className="text-xs font-semibold text-foreground flex items-center gap-1.5">
+                    <Sparkles className="size-3.5 text-accent" /> Select skills by category from
+                    dropdowns:
+                  </p>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {Object.entries(POPULAR_SKILLS).map(([category, skills]) => {
+                      const categorySelected = skills.filter((s) => activeSkillsList.includes(s));
+                      return (
+                        <div
+                          key={category}
+                          className="space-y-2 rounded-sm border border-border/80 bg-surface p-3"
+                        >
+                          <Label className="text-xs font-medium text-secondary">{category}</Label>
+                          <select
+                            value=""
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                toggleSkill(e.target.value);
+                              }
+                            }}
+                            className="w-full rounded-sm border border-border bg-surface px-2.5 py-1.5 text-xs text-foreground focus:border-accent focus:outline-none"
+                          >
+                            <option value="">+ Add {category} skill...</option>
+                            {skills.map((skill) => (
+                              <option
+                                key={skill}
+                                value={skill}
+                                disabled={activeSkillsList.includes(skill)}
+                              >
+                                {skill} {activeSkillsList.includes(skill) ? "✓ (Added)" : ""}
+                              </option>
+                            ))}
+                          </select>
+
+                          {/* Selected tags for this category */}
+                          {categorySelected.length > 0 ? (
+                            <div className="flex flex-wrap gap-1.5 pt-1">
+                              {categorySelected.map((skill) => (
+                                <span
+                                  key={skill}
+                                  className="inline-flex items-center gap-1 rounded-sm border border-accent/40 bg-accent-subtle px-2 py-0.5 text-[11px] font-medium text-accent"
+                                >
+                                  {skill}
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleSkill(skill)}
+                                    className="hover:text-destructive transition-colors ml-0.5"
+                                    aria-label={`Remove ${skill}`}
+                                  >
+                                    <X className="size-3" />
+                                  </button>
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             ) : null}
 
+            {/* Step 4: Projects with AI Generator */}
             {current.key === "projects" ? (
               <div className="space-y-3">
                 <Label htmlFor="projects">Projects & Applications Built</Label>
@@ -405,7 +622,7 @@ export function ResumeCreatePage() {
                   rows={5}
                   value={values["projects"] ?? ""}
                   onChange={set("projects")}
-                  placeholder="Describe your projects informally (e.g. Built an e-commerce platform with React and FastAPI)..."
+                  placeholder="Describe your project informally (e.g. Built a candidate job matching portal using React, FastAPI and MongoDB with JWT authentication and resume parsing)..."
                 />
                 <Button
                   size="sm"
@@ -416,13 +633,14 @@ export function ResumeCreatePage() {
                   {variantLoading ? (
                     <Loader2 className="size-3.5 animate-spin mr-1.5" />
                   ) : (
-                    <Sparkles className="size-3.5 mr-1.5" />
+                    <Sparkles className="size-3.5 mr-1.5 text-accent" />
                   )}
                   Generate 3 AI bullet variants
                 </Button>
               </div>
             ) : null}
 
+            {/* Step 5: Experience with AI Generator */}
             {current.key === "experience" ? (
               <div className="space-y-3">
                 <Label htmlFor="experience">Work Experience / Internships</Label>
@@ -431,7 +649,7 @@ export function ResumeCreatePage() {
                   rows={5}
                   value={values["experience"] ?? ""}
                   onChange={set("experience")}
-                  placeholder="Describe your role responsibilities informally..."
+                  placeholder="Describe your role or internship duties (e.g. Developed REST APIs for user authentication, reduced database latency by 20% using MongoDB indexing)..."
                 />
                 <Button
                   size="sm"
@@ -442,37 +660,127 @@ export function ResumeCreatePage() {
                   {variantLoading ? (
                     <Loader2 className="size-3.5 animate-spin mr-1.5" />
                   ) : (
-                    <Sparkles className="size-3.5 mr-1.5" />
+                    <Sparkles className="size-3.5 mr-1.5 text-accent" />
                   )}
                   Generate 3 AI bullet variants
                 </Button>
               </div>
             ) : null}
 
+            {/* Step 6: Certifications with Dropdown Quick-Add */}
             {current.key === "certifications" ? (
-              <div className="space-y-2">
-                <Label htmlFor="certifications">Certifications & Accreditations</Label>
-                <Textarea
-                  id="certifications"
-                  rows={3}
-                  value={values["certifications"] ?? ""}
-                  onChange={set("certifications")}
-                  placeholder="e.g. AWS Certified Developer, Meta Frontend Professional"
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="certifications">
+                    Certifications (comma separated or select below)
+                  </Label>
+                  <Textarea
+                    id="certifications"
+                    rows={3}
+                    value={values["certifications"] ?? ""}
+                    onChange={set("certifications")}
+                    placeholder="e.g. AWS Certified Solutions Architect, Meta Frontend Professional"
+                  />
+                </div>
+
+                <div className="rounded-sm border border-border bg-surface-hover/30 p-3.5 space-y-3">
+                  <Label htmlFor="certSelect" className="text-xs font-semibold text-foreground">
+                    Select Industry Certification from Dropdown:
+                  </Label>
+                  <select
+                    id="certSelect"
+                    value=""
+                    onChange={(e) => {
+                      if (e.target.value) {
+                        addCert(e.target.value);
+                      }
+                    }}
+                    className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-xs text-foreground focus:border-accent focus:outline-none"
+                  >
+                    <option value="">+ Select certification to add...</option>
+                    {POPULAR_CERTS.map((cert) => (
+                      <option key={cert} value={cert}>
+                        {cert}
+                      </option>
+                    ))}
+                  </select>
+
+                  {/* Active certifications tag display */}
+                  {values.certifications ? (
+                    <div className="flex flex-wrap gap-1.5 pt-1">
+                      {values.certifications
+                        .split(",")
+                        .map((c) => c.trim())
+                        .filter(Boolean)
+                        .map((cert) => (
+                          <span
+                            key={cert}
+                            className="inline-flex items-center gap-1 rounded-sm border border-accent/40 bg-accent-subtle px-2 py-0.5 text-[11px] font-medium text-accent"
+                          >
+                            {cert}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const list = values.certifications
+                                  .split(",")
+                                  .map((c) => c.trim())
+                                  .filter(Boolean)
+                                  .filter((c) => c !== cert);
+                                setValues((v) => ({ ...v, certifications: list.join(", ") }));
+                              }}
+                              className="hover:text-destructive transition-colors ml-0.5"
+                              aria-label={`Remove ${cert}`}
+                            >
+                              <X className="size-3" />
+                            </button>
+                          </span>
+                        ))}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ) : null}
+
+            {/* Step 7: Target Role with Dropdown Select */}
+            {current.key === "role" ? (
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="roleSelect" className="text-xs font-medium text-secondary">
+                    Select Target Engineering Role *
+                  </Label>
+                  <select
+                    id="roleSelect"
+                    value={
+                      TARGET_ROLE_OPTIONS.includes(values.targetRole) ? values.targetRole : "Custom"
+                    }
+                    onChange={(e) => {
+                      if (e.target.value !== "Custom") {
+                        setValues((v) => ({ ...v, targetRole: e.target.value }));
+                      }
+                    }}
+                    className="w-full rounded-sm border border-border bg-surface px-3 py-2 text-xs text-foreground focus:border-accent focus:outline-none"
+                  >
+                    {TARGET_ROLE_OPTIONS.map((r) => (
+                      <option key={r} value={r}>
+                        {r}
+                      </option>
+                    ))}
+                    <option value="Custom">Custom Role...</option>
+                  </select>
+                </div>
+
+                <Field
+                  id="targetRole"
+                  label="Target Role Title"
+                  value={values["targetRole"] ?? ""}
+                  onChange={set("targetRole")}
+                  error={errors["targetRole"]}
+                  placeholder="e.g. Full Stack Software Engineer"
                 />
               </div>
             ) : null}
 
-            {current.key === "role" ? (
-              <Field
-                id="targetRole"
-                label="Target role for this resume"
-                value={values["targetRole"] ?? ""}
-                onChange={set("targetRole")}
-                error={errors["targetRole"]}
-                placeholder="e.g. Backend Software Engineer"
-              />
-            ) : null}
-
+            {/* Step 8: Review Step */}
             {current.key === "review" ? (
               <div className="space-y-3">
                 <p className="text-sm text-muted-foreground">
@@ -483,8 +791,8 @@ export function ResumeCreatePage() {
                     .filter(([, v]) => v)
                     .map(([k, v]) => (
                       <div key={k} className="rounded-sm border border-border p-3">
-                        <dt className="text-eyebrow">{k}</dt>
-                        <dd className="mt-1 text-xs text-foreground truncate">{v}</dd>
+                        <dt className="text-eyebrow capitalize">{k.replace(/([A-Z])/g, " $1")}</dt>
+                        <dd className="mt-1 text-xs text-foreground line-clamp-2">{v}</dd>
                       </div>
                     ))}
                 </dl>
@@ -540,6 +848,11 @@ export function ResumeCreatePage() {
                   {[values.email, values.phone, values.location].filter(Boolean).join(" · ") ||
                     "contact@email.com · location"}
                 </p>
+                {values.targetRole ? (
+                  <p className="text-[11px] font-semibold text-accent mt-1 uppercase tracking-wider">
+                    {values.targetRole}
+                  </p>
+                ) : null}
               </div>
 
               {values.skills ? (
@@ -566,6 +879,17 @@ export function ResumeCreatePage() {
                     EXPERIENCE
                   </p>
                   <p className="mt-1 text-[11px] whitespace-pre-line">{values.experience}</p>
+                </div>
+              ) : null}
+
+              {values.education || values.degree ? (
+                <div className="mt-3">
+                  <p className="font-bold text-[11px] uppercase tracking-wider text-accent border-b border-border/50 pb-0.5">
+                    EDUCATION
+                  </p>
+                  <p className="mt-1 text-[11px]">
+                    {values.degree} — {values.institution} ({values.graduationYear})
+                  </p>
                 </div>
               ) : null}
             </div>
@@ -629,7 +953,7 @@ export function ResumeCreatePage() {
 function Field({ id, label, value, onChange, placeholder, error }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs font-medium text-secondary">
+      <Label htmlFor={id} className="text-xs font-semibold text-foreground">
         {label}
       </Label>
       <Input

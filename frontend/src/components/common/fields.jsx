@@ -22,7 +22,7 @@ export function SelectField({
 }) {
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-xs font-medium text-secondary">
+      <Label htmlFor={id} className="text-xs font-semibold text-foreground">
         {label}
       </Label>
       <Select {...(value ? { value } : {})} onValueChange={onChange}>
@@ -53,7 +53,7 @@ export function MultiSelectField({ label, values, onChange, options, hint }) {
 
   return (
     <fieldset className="space-y-1.5">
-      <legend className="text-xs font-medium text-secondary leading-none">{label}</legend>
+      <legend className="text-xs font-semibold text-foreground leading-none">{label}</legend>
       <div className="flex max-h-48 flex-wrap gap-2 overflow-y-auto rounded-sm border border-border bg-surface p-3">
         {options.map((option) => {
           const selected = values.includes(option);

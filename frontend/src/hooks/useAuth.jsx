@@ -37,6 +37,12 @@ export function AuthProvider({ children }) {
     return newUser;
   }, []);
 
+  const loginWithGoogle = useCallback(async (payload) => {
+    const loggedUser = await authService.loginWithGoogle(payload);
+    setUser(loggedUser);
+    return loggedUser;
+  }, []);
+
   const logout = useCallback(async () => {
     await authService.logout();
     setUser(null);
@@ -48,9 +54,10 @@ export function AuthProvider({ children }) {
       status: !ready ? "loading" : user ? "authenticated" : "anonymous",
       login,
       register,
+      loginWithGoogle,
       logout,
     }),
-    [user, ready, login, register, logout],
+    [user, ready, login, register, loginWithGoogle, logout],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
