@@ -1,10 +1,11 @@
 from fastapi import APIRouter, HTTPException, status, Response, Header, Depends
 from typing import Optional
 
-from ..schemas.auth import UserRegister, UserLogin, AuthResponse, UserOut
+from ..schemas.auth import UserRegister, UserLogin, GoogleAuthPayload, AuthResponse, UserOut
 from ..services.auth_service import (
     create_user,
     authenticate_user,
+    authenticate_or_create_google_user,
     create_session,
     delete_session
 )
@@ -18,6 +19,8 @@ async def register(payload: UserRegister, response: Response):
         user = await create_user(payload.name, payload.email, payload.password)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Registration failed.")
         
@@ -38,7 +41,14 @@ async def register(payload: UserRegister, response: Response):
 
 @router.post("/login", response_model=AuthResponse)
 async def login(payload: UserLogin, response: Response):
-    user = await authenticate_user(payload.email, payload.password)
+    try:
+        user = await authenticate_user(payload.email, payload.password)
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service temporarily unavailable. Please verify database connection."
+        )
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -58,6 +68,37 @@ async def login(payload: UserLogin, response: Response):
         "user": user,
         "session_token": session_token,
         "message": "Signed in successfully."
+    }
+
+@router.post("/google", response_model=AuthResponse)
+async def google_auth(payload: GoogleAuthPayload, response: Response):
+    try:
+        user = await authenticate_or_create_google_user(
+            credential=payload.credential,
+            email=payload.email,
+            name=payload.name,
+            picture=payload.picture
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except RuntimeError as e:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Google authentication failed.")
+
+    session_token = await create_session(user["id"])
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        max_age=7 * 86400,
+        samesite="lax"
+    )
+
+    return {
+        "user": user,
+        "session_token": session_token,
+        "message": "Google authentication successful."
     }
 
 @router.get("/me", response_model=UserOut)

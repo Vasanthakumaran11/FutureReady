@@ -10,6 +10,12 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
+class GoogleAuthPayload(BaseModel):
+    credential: Optional[str] = None
+    email: Optional[EmailStr] = None
+    name: Optional[str] = None
+    picture: Optional[str] = None
+
 class UserOut(BaseModel):
     id: str
     name: str

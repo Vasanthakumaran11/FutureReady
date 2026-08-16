@@ -32,28 +32,28 @@ async def connect_to_mongo():
     db_name = os.getenv("MONGODB_DB_NAME", "futureready")
     
     try:
-        if "mongodb+srv://" in mongodb_url or "ssl=true" in mongodb_url.lower():
-            db_instance.client = AsyncIOMotorClient(
-                mongodb_url,
-                tlsCAFile=certifi.where(),
-                serverSelectionTimeoutMS=5000,
-                connectTimeoutMS=5000,
-                socketTimeoutMS=5000
-            )
-        else:
-            db_instance.client = AsyncIOMotorClient(
-                mongodb_url,
-                serverSelectionTimeoutMS=5000,
-                connectTimeoutMS=5000,
-                socketTimeoutMS=5000
-            )
+        is_srv_or_ssl = "mongodb+srv://" in mongodb_url or "ssl=true" in mongodb_url.lower()
+        client_kwargs = {
+            "serverSelectionTimeoutMS": 20000,
+            "connectTimeoutMS": 20000,
+            "socketTimeoutMS": 20000,
+            "retryWrites": True,
+            "retryReads": True,
+        }
         
+        if is_srv_or_ssl:
+            client_kwargs["tls"] = True
+            client_kwargs["tlsCAFile"] = certifi.where()
+            
+        db_instance.client = AsyncIOMotorClient(mongodb_url, **client_kwargs)
         db_instance.db = db_instance.client[db_name]
+        
+        # Test connection
         await db_instance.client.admin.command('ping')
-        print(f"Successfully connected to MongoDB Atlas database: {db_name}")
+        print(f"Successfully connected to MongoDB database: {db_name}")
     except Exception as e:
-        print(f"Notice: MongoDB Atlas connection pending: {e}")
-        print("Tip: If you see TLS/handshake errors, ensure your IP address (or 0.0.0.0/0) is added in Atlas Network Access.")
+        print(f"Notice: MongoDB connection attempt: {e}")
+        print("Tip: If using MongoDB Atlas, ensure your IP is added to Network Access whitelist (or 0.0.0.0/0).")
 
 async def close_mongo_connection():
     if db_instance.client:
