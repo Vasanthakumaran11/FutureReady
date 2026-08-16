@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { jobService } from "@/services/jobs/jobService";
 import type { Job } from "@/types";
+import emptyJobs from "@/assets/illustrations/empty-jobs.jpg";
 
 export const Route = createFileRoute("/_authenticated/jobs/")({
   head: () => ({
@@ -76,6 +77,7 @@ function JobsPage() {
 
       {data && data.items.length === 0 ? (
         <EmptyState
+          illustration={emptyJobs}
           title="No matching jobs"
           description="Try widening your filters or clearing the location."
           actionLabel="Clear filters"

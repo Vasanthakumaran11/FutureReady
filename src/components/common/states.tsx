@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 export function EmptyState({
   icon,
+  illustration,
   title,
   description,
   actionLabel,
@@ -15,6 +16,7 @@ export function EmptyState({
   className,
 }: {
   icon?: ReactNode;
+  illustration?: string;
   title: string;
   description: string;
   actionLabel?: string;
@@ -25,18 +27,27 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "flex flex-col items-center justify-center rounded-lg border border-dashed border-border bg-surface px-6 py-12 text-center",
+        "flex flex-col items-center justify-center rounded-md border border-dashed border-border bg-surface px-6 py-12 text-center",
         className,
       )}
     >
-      {icon ? (
-        <div className="mb-3 flex size-11 items-center justify-center rounded-full bg-primary-soft text-primary">
+      {illustration ? (
+        <img
+          src={illustration}
+          alt=""
+          loading="lazy"
+          width={768}
+          height={768}
+          className="mb-4 size-40 object-contain"
+        />
+      ) : icon ? (
+        <div className="mb-4 flex size-10 items-center justify-center rounded-sm bg-primary-soft text-primary [&_svg]:size-5">
           {icon}
         </div>
       ) : null}
-      <h3 className="text-base font-semibold">{title}</h3>
-      <p className="mt-1 max-w-md text-sm text-muted-foreground">{description}</p>
-      <div className="mt-5 flex flex-wrap items-center justify-center gap-2">
+      <h3 className="text-[18px] font-semibold leading-[26px]">{title}</h3>
+      <p className="mt-2 max-w-md text-sm leading-[22px] text-muted-foreground">{description}</p>
+      <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
         {actionLabel && onAction ? <Button onClick={onAction}>{actionLabel}</Button> : null}
         {secondary}
       </div>
@@ -57,7 +68,7 @@ export function ErrorState({
     <div
       role="alert"
       className={cn(
-        "flex flex-col items-start gap-3 rounded-lg border border-destructive/30 bg-danger-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between",
+        "flex flex-col items-start gap-3 rounded-md border border-destructive/25 bg-danger-soft px-5 py-4 sm:flex-row sm:items-center sm:justify-between",
         className,
       )}
     >
@@ -81,7 +92,7 @@ export function CardsSkeleton({ count = 3, height = 120 }: { count?: number; hei
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
       {Array.from({ length: count }).map((_, i) => (
-        <Skeleton key={i} className="w-full rounded-lg" style={{ height }} />
+        <Skeleton key={i} className="w-full rounded-md" style={{ height }} />
       ))}
     </div>
   );
@@ -91,7 +102,7 @@ export function RowsSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="space-y-3">
       {Array.from({ length: count }).map((_, i) => (
-        <Skeleton key={i} className="h-16 w-full rounded-lg" />
+        <Skeleton key={i} className="h-16 w-full rounded-md" />
       ))}
     </div>
   );

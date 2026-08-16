@@ -12,10 +12,10 @@ export function PageHeader({
   actions?: ReactNode;
 }) {
   return (
-    <header className="flex flex-col gap-3 border-b border-border pb-5 sm:flex-row sm:items-start sm:justify-between">
+    <header className="flex flex-col gap-3 border-b border-border pb-6 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0">
-        <h1 className="text-xl font-semibold sm:text-2xl">{title}</h1>
-        <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
+        <h1 className="text-2xl font-semibold leading-8">{title}</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-[22px] text-muted-foreground">{description}</p>
       </div>
       {actions ? <div className="flex flex-wrap items-center gap-2">{actions}</div> : null}
     </header>
@@ -39,20 +39,20 @@ export function SectionCard({
 }) {
   return (
     <section
-      className={cn("rounded-lg border border-border bg-surface shadow-card", className)}
+      className={cn("rounded-md border border-border bg-surface-raised shadow-card", className)}
     >
       {title ? (
-        <div className="flex flex-col gap-2 border-b border-border px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-2 border-b border-border px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="min-w-0">
-            <h2 className="text-sm font-semibold">{title}</h2>
+            <h2 className="text-[18px] font-semibold leading-[26px]">{title}</h2>
             {description ? (
-              <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+              <p className="mt-1 text-sm leading-[22px] text-muted-foreground">{description}</p>
             ) : null}
           </div>
           {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
         </div>
       ) : null}
-      <div className={cn("p-5", bodyClassName)}>{children}</div>
+      <div className={cn("p-6", bodyClassName)}>{children}</div>
     </section>
   );
 }
@@ -69,20 +69,20 @@ export function StatTile({
   suffix?: string;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-surface p-4 shadow-card">
+    <div className="rounded-md border border-border bg-surface-raised p-6 shadow-card">
       <p className="text-eyebrow">{label}</p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight">
+      <p className="mt-3 text-metric text-foreground">
         {value}
-        {suffix ? <span className="ml-0.5 text-base text-muted-foreground">{suffix}</span> : null}
+        {suffix ? <span className="ml-0.5 text-base text-tertiary-foreground">{suffix}</span> : null}
       </p>
-      {hint ? <p className="mt-1 text-xs text-muted-foreground">{hint}</p> : null}
+      {hint ? <p className="mt-2 text-xs text-muted-foreground">{hint}</p> : null}
     </div>
   );
 }
 
 export function BackendNotice({ children }: { children?: ReactNode }) {
   return (
-    <p className="text-xs text-muted-foreground">
+    <p className="text-xs text-tertiary-foreground">
       {children ??
         "Backend integration pending — this action calls a frontend service stub that will be replaced by the FastAPI endpoint."}
     </p>

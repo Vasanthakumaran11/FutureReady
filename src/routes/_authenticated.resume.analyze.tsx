@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { resumeService } from "@/services/resume/resumeService";
+import emptyResume from "@/assets/illustrations/empty-resume.jpg";
 
 export const Route = createFileRoute("/_authenticated/resume/analyze")({
   head: () => ({
@@ -50,6 +51,7 @@ function ResumeAnalyzePage() {
         <JourneyStrip current="Resume" />
         <PageHeader title="Resume analysis" description="Upload a resume to run the analysis." />
         <EmptyState
+          illustration={emptyResume}
           title="No resume uploaded yet"
           description="Upload a PDF or DOCX resume and FutureReady will score it against your target role."
           secondary={
