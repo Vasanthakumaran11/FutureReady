@@ -7,7 +7,7 @@ import type { Job } from "@/types";
 
 export function JobCard({ job, onSave }: { job: Job; onSave?: (job: Job) => void }) {
   return (
-    <article className="rounded-lg border border-border bg-surface p-5 shadow-card">
+    <article className="rounded-md border border-border bg-surface-raised p-6 shadow-card transition-colors duration-150 hover:border-border-strong">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <h3 className="truncate text-base font-semibold">{job.title}</h3>
@@ -26,7 +26,7 @@ export function JobCard({ job, onSave }: { job: Job; onSave?: (job: Job) => void
         <div className="w-32 shrink-0">
           <div className="flex items-baseline justify-between">
             <span className="text-eyebrow">Match</span>
-            <span className="text-sm font-semibold">{job.matchScore}%</span>
+            <span className="text-num text-xl font-semibold text-primary">{job.matchScore}%</span>
           </div>
           <ProgressBar
             value={job.matchScore}
@@ -43,7 +43,7 @@ export function JobCard({ job, onSave }: { job: Job; onSave?: (job: Job) => void
         ))}
       </div>
 
-      <div className="mt-4 rounded-md bg-muted/60 px-3 py-2.5">
+      <div className="mt-4 rounded-sm bg-surface px-4 py-3">
         <p className="text-eyebrow">Why this job matches</p>
         <ul className="mt-1.5 space-y-1 text-sm text-muted-foreground">
           {job.matchReasons.slice(0, 2).map((reason) => (

@@ -74,7 +74,7 @@ export function AppShell({
       <aside
         className={cn(
           "fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-sidebar-border bg-sidebar transition-[width] duration-200 lg:flex",
-          collapsed ? "w-[72px]" : "w-64",
+          collapsed ? "w-16" : "w-60",
         )}
       >
         <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
@@ -82,7 +82,7 @@ export function AppShell({
             <Sparkles className="size-4" aria-hidden />
           </span>
           {!collapsed ? (
-            <span className="truncate font-display text-sm font-semibold">FutureReady</span>
+            <span className="truncate text-sm font-semibold tracking-tight">FutureReady</span>
           ) : null}
         </div>
 
@@ -96,14 +96,14 @@ export function AppShell({
                 to={item.href}
                 title={collapsed ? item.label : undefined}
                 className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "flex items-center gap-3 rounded-sm px-3 py-2 text-sm font-medium transition-colors duration-150",
                   active
                     ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent/60",
+                    : "text-sidebar-foreground hover:bg-surface hover:text-foreground",
                 )}
                 aria-current={active ? "page" : undefined}
               >
-                <Icon className={cn("size-4 shrink-0", active && "text-sidebar-primary")} aria-hidden />
+                <Icon className={cn("size-5 shrink-0", active ? "text-sidebar-primary" : "text-muted-foreground")} aria-hidden />
                 {!collapsed ? <span className="truncate">{item.label}</span> : null}
               </Link>
             );
@@ -124,12 +124,12 @@ export function AppShell({
         </div>
       </aside>
 
-      <div className={cn("flex min-h-screen flex-col", collapsed ? "lg:pl-[72px]" : "lg:pl-64")}>
-        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-surface/95 px-4 backdrop-blur sm:px-6">
+      <div className={cn("flex min-h-screen flex-col", collapsed ? "lg:pl-16" : "lg:pl-60")}>
+        <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background px-4 sm:px-6">
           <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground lg:hidden">
             <Sparkles className="size-4" aria-hidden />
           </span>
-          <h2 className="min-w-0 flex-1 truncate font-display text-sm font-semibold sm:text-base">
+          <h2 className="min-w-0 flex-1 truncate text-sm font-semibold sm:text-base">
             {title}
           </h2>
 
@@ -143,7 +143,7 @@ export function AppShell({
           ) : null}
 
           <Button variant="ghost" size="icon" aria-label="Notifications">
-            <Bell className="size-4" aria-hidden />
+            <Bell className="size-[18px]" aria-hidden />
           </Button>
 
           <DropdownMenu>
@@ -172,8 +172,8 @@ export function AppShell({
           </DropdownMenu>
         </header>
 
-        <main className="flex-1 px-4 pb-24 pt-6 sm:px-6 lg:pb-10">
-          <div className="mx-auto w-full max-w-[1400px] space-y-6">{children}</div>
+        <main className="flex-1 px-4 pb-24 pt-8 sm:px-8 lg:pb-12">
+          <div className="mx-auto w-full max-w-[1280px] space-y-6">{children}</div>
         </main>
       </div>
 
@@ -190,11 +190,11 @@ export function AppShell({
               to={item.href}
               className={cn(
                 "flex flex-1 flex-col items-center gap-1 py-2.5 text-[11px] font-medium",
-                active ? "text-primary" : "text-muted-foreground",
+                active ? "text-primary" : "text-tertiary-foreground",
               )}
               aria-current={active ? "page" : undefined}
             >
-              <Icon className="size-4" aria-hidden />
+              <Icon className="size-5" aria-hidden />
               <span className="truncate px-1">{item.label.split(" ")[0]}</span>
             </Link>
           );
