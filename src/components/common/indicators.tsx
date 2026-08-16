@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { ApplicationStatus, IssueSeverity, SkillLevel } from "@/types";
 
 const toneStyles = {
-  neutral: "bg-secondary text-secondary-foreground",
+  neutral: "bg-surface text-muted-foreground border border-border",
   primary: "bg-primary-soft text-primary",
   success: "bg-success-soft text-success",
   warning: "bg-warning-soft text-warning",
@@ -27,7 +27,7 @@ export function StatusBadge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-semibold",
+        "inline-flex items-center gap-1 rounded-sm px-2.5 py-1 text-[12px] font-medium uppercase leading-4 tracking-[0.02em]",
         toneStyles[tone],
         className,
       )}
@@ -87,7 +87,7 @@ export const applicationStatusMeta: Record<ApplicationStatus, { label: string; t
 export function AiLabel({ children = "AI Suggestion" }: { children?: ReactNode }) {
   return (
     <StatusBadge tone="ai">
-      <Sparkles className="size-3" aria-hidden />
+      <Sparkles className="size-3.5" aria-hidden />
       {children}
     </StatusBadge>
   );
@@ -100,22 +100,32 @@ export function ProgressBar({
   className,
 }: {
   value: number;
-  tone?: "primary" | "success" | "warning";
+  tone?: "primary" | "success" | "warning" | "danger";
   label?: string;
   className?: string;
 }) {
-  const bg =
-    tone === "success" ? "bg-success" : tone === "warning" ? "bg-warning" : "bg-primary";
+  const fill =
+    tone === "success"
+      ? "bg-success"
+      : tone === "warning"
+        ? "bg-warning"
+        : tone === "danger"
+          ? "bg-destructive"
+          : "bg-primary";
+  const track = tone === "danger" ? "bg-danger-soft" : "bg-border";
   return (
     <div
-      className={cn("h-2 w-full overflow-hidden rounded-full bg-muted", className)}
+      className={cn("h-1.5 w-full overflow-hidden rounded-full", track, className)}
       role="progressbar"
       aria-valuenow={Math.round(value)}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-label={label ?? "Progress"}
     >
-      <div className={cn("h-full rounded-full", bg)} style={{ width: `${Math.min(100, Math.max(0, value))}%` }} />
+      <div
+        className={cn("h-full rounded-full transition-[width] duration-200 ease-[cubic-bezier(0.16,1,0.3,1)]", fill)}
+        style={{ width: `${Math.min(100, Math.max(0, value))}%` }}
+      />
     </div>
   );
 }
@@ -149,7 +159,7 @@ export function ProgressRing({
           cy={size / 2}
           r={radius}
           fill="none"
-          stroke="var(--color-muted)"
+          stroke="var(--color-border)"
           strokeWidth={stroke}
         />
         <circle
@@ -169,13 +179,21 @@ export function ProgressRing({
           y="50%"
           dominantBaseline="central"
           textAnchor="middle"
-          className="fill-foreground text-lg font-semibold"
-          style={{ fontSize: size / 4.5 }}
+          className="fill-foreground font-mono font-semibold"
+          style={{ fontSize: size / 3.4, letterSpacing: "-0.02em" }}
         >
           {Math.round(value)}
         </text>
       </svg>
-      {caption ? <p className="mt-2 text-xs text-muted-foreground">{caption}</p> : null}
+      {caption ? <p className="mt-3 text-xs text-muted-foreground">{caption}</p> : null}
     </div>
+  );
+}
+
+export function IconTile({ children }: { children: ReactNode }) {
+  return (
+    <span className="flex size-10 shrink-0 items-center justify-center rounded-sm bg-primary-soft text-primary [&_svg]:size-5">
+      {children}
+    </span>
   );
 }
