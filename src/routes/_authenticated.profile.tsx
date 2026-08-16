@@ -11,6 +11,8 @@ import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SelectField } from "@/components/common/fields";
+import { ROLE_OPTIONS } from "@/lib/options";
 import {
   Dialog,
   DialogContent,
@@ -237,18 +239,30 @@ function ProfilePage() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="major">Major role</Label>
-              <Input id="major" value={roleDraft.major} onChange={(e) => setRoleDraft((d) => ({ ...d, major: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="o1">Optional role 1</Label>
-              <Input id="o1" value={roleDraft.o1} onChange={(e) => setRoleDraft((d) => ({ ...d, o1: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="o2">Optional role 2</Label>
-              <Input id="o2" value={roleDraft.o2} onChange={(e) => setRoleDraft((d) => ({ ...d, o2: e.target.value }))} />
-            </div>
+            <SelectField
+              id="major"
+              label="Major role"
+              value={roleDraft.major}
+              onChange={(value) => setRoleDraft((d) => ({ ...d, major: value }))}
+              options={ROLE_OPTIONS}
+              placeholder="Select your major role"
+            />
+            <SelectField
+              id="o1"
+              label="Optional role 1"
+              value={roleDraft.o1}
+              onChange={(value) => setRoleDraft((d) => ({ ...d, o1: value }))}
+              options={ROLE_OPTIONS}
+              placeholder="Select an optional role"
+            />
+            <SelectField
+              id="o2"
+              label="Optional role 2"
+              value={roleDraft.o2}
+              onChange={(value) => setRoleDraft((d) => ({ ...d, o2: value }))}
+              options={ROLE_OPTIONS}
+              placeholder="Select an optional role"
+            />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditingRoles(false)}>
