@@ -9,7 +9,6 @@ import {
   MessagesSquare,
   Search,
   Settings,
-  Sparkles,
   Target,
   User as UserIcon,
 } from "lucide-react";
@@ -25,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Logo } from "@/components/common/Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -78,9 +78,7 @@ export function AppShell({
         )}
       >
         <div className="flex h-16 items-center gap-2 border-b border-sidebar-border px-4">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
-            <Sparkles className="size-4" aria-hidden />
-          </span>
+          <Logo />
           {!collapsed ? (
             <span className="truncate text-sm font-semibold tracking-tight">FutureReady</span>
           ) : null}
@@ -126,9 +124,7 @@ export function AppShell({
 
       <div className={cn("flex min-h-screen flex-col", collapsed ? "lg:pl-16" : "lg:pl-60")}>
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-background px-4 sm:px-6">
-          <span className="flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground lg:hidden">
-            <Sparkles className="size-4" aria-hidden />
-          </span>
+          <Logo className="lg:hidden" />
           <h2 className="min-w-0 flex-1 truncate text-sm font-semibold sm:text-base">
             {title}
           </h2>
