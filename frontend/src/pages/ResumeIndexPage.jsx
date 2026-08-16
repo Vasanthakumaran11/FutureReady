@@ -1,14 +1,21 @@
 import { Link, useNavigate } from "react-router-dom";
-import { FileText, Loader2, Trash2, Upload } from "lucide-react";
+import { Check, FileText, Loader2, Sparkles, Trash2, Upload, UserCheck } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
-import { JourneyStrip } from "@/components/common/JourneyStrip";
 import { ProgressBar, StatusBadge } from "@/components/common/indicators";
-import { BackendNotice, PageHeader, SectionCard } from "@/components/common/page";
+import { PageHeader, SectionCard } from "@/components/common/page";
 import { ErrorState, RowsSkeleton } from "@/components/common/states";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useAsyncData } from "@/hooks/useAsyncData";
 import { resumeService } from "@/services/resume/resumeService";
 
@@ -17,33 +24,81 @@ const ACCEPTED = [".pdf", ".docx"];
 export function ResumeIndexPage() {
   const navigate = useNavigate();
   const { data, loading, error, reload, setData } = useAsyncData(() => resumeService.getResume());
+
   const [uploading, setUploading] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [dragging, setDragging] = useState(false);
   const [uploadError, setUploadError] = useState(null);
   const inputRef = useRef(null);
 
+  // Extracted data confirmation state
+  const [extractedData, setExtractedData] = useState(null);
+  const [fileMeta, setFileMeta] = useState(null);
+  const [confirmModalOpen, setConfirmModalOpen] = useState(false);
+  const [savingConfirmation, setSavingConfirmation] = useState(false);
+
   const handleFile = async (file) => {
     if (!file) return;
     const valid = ACCEPTED.some((ext) => file.name.toLowerCase().endsWith(ext));
     if (!valid) {
-      setUploadError("Only PDF and DOCX files are supported.");
+      setUploadError("Only PDF and DOCX files (max 5MB) are supported.");
       return;
     }
     setUploadError(null);
     setUploading(true);
-    setProgress(15);
-    const timer = setInterval(() => setProgress((p) => Math.min(90, p + 15)), 180);
+    setProgress(20);
+    const timer = setInterval(() => setProgress((p) => Math.min(85, p + 15)), 200);
+
     try {
-      const next = await resumeService.uploadResume(file);
-      setData(next);
+      // Step 1: Upload & Extract Raw Text
+      const uploadRes = await resumeService.uploadFile(file);
+      setProgress(90);
+      setFileMeta({
+        name: uploadRes.filename,
+        sizeKb: uploadRes.sizeKb,
+        uploadedAt: new Date().toLocaleDateString("en-GB", {
+          day: "numeric",
+          month: "short",
+          year: "numeric",
+        }),
+      });
+
+      // Step 2: Gemini Structured Extraction & Skill Normalization
+      setExtracting(true);
+      const extractRes = await resumeService.extractFields(uploadRes.extracted_text);
+      setExtractedData(extractRes.data);
       setProgress(100);
-      toast.success("Resume uploaded");
-    } catch {
-      setUploadError("Upload failed. Try again.");
+      setConfirmModalOpen(true);
+      toast.success("Resume text and skills extracted successfully!");
+    } catch (err) {
+      const errMsg = err?.message || "Upload or extraction failed. Please try again.";
+      setUploadError(errMsg);
+      toast.error(errMsg);
     } finally {
       clearInterval(timer);
       setUploading(false);
+      setExtracting(false);
+    }
+  };
+
+  const handleConfirmAndSave = async () => {
+    if (!extractedData) return;
+    setSavingConfirmation(true);
+    try {
+      const saveRes = await resumeService.confirmAndSaveResume({
+        profileData: extractedData,
+        fileMeta: fileMeta,
+        template: "classic",
+      });
+      setData(saveRes.data);
+      setConfirmModalOpen(false);
+      toast.success("Candidate profile updated with extracted skills!");
+      navigate("/resume/analyze");
+    } catch {
+      toast.error("Failed to save confirmed resume profile.");
+    } finally {
+      setSavingConfirmation(false);
     }
   };
 
@@ -56,16 +111,17 @@ export function ResumeIndexPage() {
   const remove = async () => {
     setData(await resumeService.removeResume());
     setProgress(0);
+    toast.success("Resume removed");
   };
 
   return (
     <AppShell title="Resume">
       <PageHeader
-        title="Resume"
-        description="Two paths: refine the resume you already have, or build one from the profile you have already filled in."
+        title="Resume Hub"
+        description="Two paths: extract and refine an existing resume, or let FutureReady build an ATS-tailored resume based on your skills."
         actions={
           <Button variant="outline" asChild>
-            <Link to="/resume/create">Start resume builder</Link>
+            <Link to="/resume/create">Start guided builder</Link>
           </Button>
         }
       />
@@ -75,9 +131,10 @@ export function ResumeIndexPage() {
 
       {data ? (
         <div className="grid gap-4 xl:grid-cols-2">
+          {/* Path A: Existing Resume */}
           <SectionCard
             title="Path A — I already have a resume"
-            description="Upload → analyse → identify gaps → AI refinement → review → final resume."
+            description="Upload → AI extraction → review & normalize skills → section critique → refinement."
           >
             {!data.hasResume ? (
               <>
@@ -112,10 +169,16 @@ export function ResumeIndexPage() {
                   <Button
                     className="mt-4"
                     onClick={() => inputRef.current?.click()}
-                    disabled={uploading}
+                    disabled={uploading || extracting}
                   >
-                    {uploading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
-                    {uploading ? "Uploading…" : "Choose file"}
+                    {uploading || extracting ? (
+                      <Loader2 className="size-4 animate-spin mr-2" aria-hidden />
+                    ) : null}
+                    {extracting
+                      ? "Extracting skills with AI…"
+                      : uploading
+                        ? "Uploading…"
+                        : "Choose file"}
                   </Button>
                   <input
                     ref={inputRef}
@@ -126,13 +189,17 @@ export function ResumeIndexPage() {
                     onChange={(e) => void handleFile(e.target.files?.[0])}
                   />
                 </div>
-                {uploading ? (
-                  <ProgressBar value={progress} className="mt-4" label="Upload progress" />
+                {uploading || extracting ? (
+                  <ProgressBar
+                    value={progress}
+                    className="mt-4"
+                    label="Upload & extraction progress"
+                  />
                 ) : null}
                 {uploadError ? (
-                  <p role="alert" className="mt-3 text-xs sm:text-sm text-destructive">
+                  <div className="mt-3 rounded-sm border border-destructive/20 bg-danger-soft p-3 text-xs sm:text-sm text-destructive">
                     {uploadError}
-                  </p>
+                  </div>
                 ) : null}
               </>
             ) : (
@@ -147,7 +214,7 @@ export function ResumeIndexPage() {
                         {data.file?.name}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {data.file?.sizeKb} KB · uploaded
+                        {data.file?.sizeKb} KB · {data.file?.uploadedAt || "Uploaded"}
                       </p>
                     </div>
                   </div>
@@ -174,34 +241,186 @@ export function ResumeIndexPage() {
                     />
                   </div>
                 </div>
-                <Button onClick={() => void navigate("/resume/analyze")}>Analyse resume</Button>
+                <div className="flex gap-3">
+                  <Button onClick={() => void navigate("/resume/analyze")}>
+                    <Sparkles className="size-4 mr-1.5" /> Analyse resume
+                  </Button>
+                  <Button variant="outline" asChild>
+                    <Link to="/resume/create">Open in builder</Link>
+                  </Button>
+                </div>
               </div>
             )}
           </SectionCard>
 
+          {/* Path B: Guided Builder */}
           <SectionCard
             title="Path B — I don't have a resume yet"
-            description="Guided builder: details → education → skills → projects → experience → certifications → target role → review."
+            description="Build a perfect, ATS-tailored resume based on your selected skills and experience."
           >
-            <ul className="space-y-2 text-xs sm:text-sm text-muted-foreground">
-              <li>• Pre-filled from your profile, so you are never starting from an empty page.</li>
-              <li>• AI refines wording only — it never invents experience or qualifications.</li>
-              <li>• Two professional templates, both ATS-friendly.</li>
+            <ul className="space-y-2.5 text-xs sm:text-sm text-muted-foreground">
+              <li className="flex items-start gap-2">
+                <Check className="size-4 text-accent mt-0.5 shrink-0" />
+                <span>
+                  <strong>Skills-driven</strong>: Automatically tailors sections based on your
+                  candidate skills and target role.
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="size-4 text-accent mt-0.5 shrink-0" />
+                <span>
+                  <strong>AI Bullet Generator</strong>: Converts brief descriptions into 3
+                  professional variants (technical depth, impact, leadership).
+                </span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="size-4 text-accent mt-0.5 shrink-0" />
+                <span>
+                  <strong>ATS-Optimized Templates</strong>: Clean, single-column structures
+                  engineered for high ATS parsing accuracy.
+                </span>
+              </li>
             </ul>
             <div className="mt-5 flex flex-wrap items-center gap-2">
               <Button asChild>
-                <Link to="/resume/create">Start resume builder</Link>
+                <Link to="/resume/create">Start guided builder</Link>
               </Button>
-              <StatusBadge tone="primary">Draft saving supported</StatusBadge>
+              <StatusBadge tone="primary">Zero experience hallucination</StatusBadge>
             </div>
           </SectionCard>
         </div>
       ) : null}
 
-      <BackendNotice>
-        File parsing, storage and analysis run on the FastAPI backend — uploads here are held in the
-        frontend resume service until those endpoints exist.
-      </BackendNotice>
+      {/* Confirmation & Review Modal for Extracted Data */}
+      <Dialog open={confirmModalOpen} onOpenChange={setConfirmModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="size-5 text-accent" />
+              Review Extracted Resume Data
+            </DialogTitle>
+            <DialogDescription>
+              Review the information extracted from your resume. Confirmed skills will be placed
+              directly into your candidate profile.
+            </DialogDescription>
+          </DialogHeader>
+
+          {extractedData ? (
+            <div className="space-y-4 py-2 text-sm">
+              {/* Personal Info */}
+              <div className="rounded-sm border border-border p-3 bg-surface-hover/30">
+                <p className="text-eyebrow text-tertiary">Candidate Info</p>
+                <p className="font-semibold text-foreground mt-0.5">
+                  {extractedData.personal?.name || "Name not specified"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {[
+                    extractedData.personal?.email,
+                    extractedData.personal?.phone,
+                    extractedData.personal?.location,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </p>
+              </div>
+
+              {/* Technical Skills with Normalization Status */}
+              <div>
+                <p className="text-eyebrow text-tertiary mb-1.5">
+                  Extracted Skills (
+                  {extractedData.skills_normalized?.technical?.length ||
+                    extractedData.skills?.technical?.length ||
+                    0}
+                  )
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {extractedData.skills_normalized?.technical?.map((s, idx) => (
+                    <span
+                      key={idx}
+                      className={`inline-flex items-center gap-1 rounded-sm px-2 py-0.5 text-xs font-medium border ${
+                        s.normalized
+                          ? "border-accent/30 bg-accent-subtle text-accent"
+                          : "border-border bg-surface-hover text-foreground"
+                      }`}
+                    >
+                      {s.canonical}
+                      {s.normalized ? <Check className="size-3" /> : null}
+                    </span>
+                  )) ||
+                    extractedData.skills?.technical?.map((s, idx) => (
+                      <span
+                        key={idx}
+                        className="inline-flex items-center rounded-sm border border-border bg-surface-hover px-2 py-0.5 text-xs text-foreground"
+                      >
+                        {s}
+                      </span>
+                    ))}
+                </div>
+              </div>
+
+              {/* Projects */}
+              {extractedData.projects && extractedData.projects.length > 0 ? (
+                <div>
+                  <p className="text-eyebrow text-tertiary mb-1.5">
+                    Projects ({extractedData.projects.length})
+                  </p>
+                  <div className="space-y-2">
+                    {extractedData.projects.map((p, i) => (
+                      <div key={i} className="rounded-sm border border-border p-2.5 bg-surface">
+                        <p className="font-semibold text-foreground text-xs">{p.title}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{p.description}</p>
+                        {p.techStack && p.techStack.length > 0 ? (
+                          <p className="text-[11px] text-tertiary mt-1">
+                            Tech: {p.techStack.join(", ")}
+                          </p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Experience */}
+              {extractedData.experience && extractedData.experience.length > 0 ? (
+                <div>
+                  <p className="text-eyebrow text-tertiary mb-1.5">
+                    Experience ({extractedData.experience.length})
+                  </p>
+                  <div className="space-y-2">
+                    {extractedData.experience.map((x, i) => (
+                      <div key={i} className="rounded-sm border border-border p-2.5 bg-surface">
+                        <p className="font-semibold text-foreground text-xs">
+                          {x.role} · {x.company}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {x.startDate} - {x.endDate}
+                        </p>
+                        {x.description ? (
+                          <p className="text-xs text-muted-foreground mt-0.5">{x.description}</p>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={() => void handleConfirmAndSave()} disabled={savingConfirmation}>
+              {savingConfirmation ? (
+                <Loader2 className="size-4 animate-spin mr-1.5" />
+              ) : (
+                <UserCheck className="size-4 mr-1.5" />
+              )}
+              Confirm & Save to Profile
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AppShell>
   );
 }

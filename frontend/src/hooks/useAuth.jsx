@@ -8,16 +8,33 @@ export function AuthProvider({ children }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    setUser(authService.currentUser());
-    setReady(true);
+    let mounted = true;
+    async function initAuth() {
+      try {
+        const currentUser = await authService.getCurrentUser();
+        if (mounted) setUser(currentUser);
+      } catch {
+        if (mounted) setUser(null);
+      } finally {
+        if (mounted) setReady(true);
+      }
+    }
+    initAuth();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const login = useCallback(async (c) => {
-    setUser(await authService.login(c));
+  const login = useCallback(async (credentials) => {
+    const loggedUser = await authService.login(credentials);
+    setUser(loggedUser);
+    return loggedUser;
   }, []);
 
-  const register = useCallback(async (p) => {
-    setUser(await authService.register(p));
+  const register = useCallback(async (payload) => {
+    const newUser = await authService.register(payload);
+    setUser(newUser);
+    return newUser;
   }, []);
 
   const logout = useCallback(async () => {

@@ -1,11 +1,19 @@
-import { mockDelay } from "@/services/apiClient";
-import { mockDashboard, mockSkillGaps } from "@/services/mock/data";
+import { apiRequest } from "../apiClient";
 
 export const dashboardService = {
-  getDashboardData() {
-    return mockDelay(mockDashboard, 650);
+  async getDashboardData() {
+    return await apiRequest("/dashboard/summary");
   },
-  getSkillGap() {
-    return mockDelay(mockSkillGaps, 500);
+
+  async getDashboardSummary() {
+    return await apiRequest("/dashboard/summary");
+  },
+
+  async getSkillGap() {
+    return await apiRequest("/dashboard/gaps");
+  },
+
+  async getGaps() {
+    return await apiRequest("/dashboard/gaps");
   },
 };

@@ -1,13 +1,9 @@
 /**
- * Thin HTTP client for the future FastAPI backend.
- *
- * Configure the backend origin with VITE_API_BASE_URL. No API keys (Gemini,
- * job providers, database credentials) are ever read or stored on the client —
- * every external call must be proxied by FastAPI.
+ * Thin HTTP client for the FastAPI backend with MongoDB session authentication.
  */
-const BASE_URL = import.meta.env["VITE_API_BASE_URL"] ?? "";
+const BASE_URL = import.meta.env["VITE_API_BASE_URL"] || "http://localhost:8000/api/v1";
 
-export const isBackendConfigured = Boolean(BASE_URL);
+export const isBackendConfigured = true;
 
 export class ApiError extends Error {
   constructor(status, message) {
@@ -17,32 +13,65 @@ export class ApiError extends Error {
   }
 }
 
+export function getSessionToken() {
+  try {
+    return localStorage.getItem("futureready_session_token") || null;
+  } catch {
+    return null;
+  }
+}
+
+export function setSessionToken(token) {
+  try {
+    if (token) {
+      localStorage.setItem("futureready_session_token", token);
+    } else {
+      localStorage.removeItem("futureready_session_token");
+    }
+  } catch {
+    // ignore
+  }
+}
+
 export async function apiRequest(path, options = {}) {
-  const { json, headers, ...rest } = options;
+  const { json, headers, body, ...rest } = options;
+  const token = getSessionToken();
+
+  const isFormData = body instanceof FormData;
+
+  const requestHeaders = {
+    ...(token ? { "X-Session-Token": token } : {}),
+    ...(headers ?? {}),
+  };
+
+  if (!isFormData && json !== undefined) {
+    requestHeaders["Content-Type"] = "application/json";
+  }
 
   const response = await fetch(`${BASE_URL}${path}`, {
     ...rest,
-    // Session cookies are set by FastAPI (httpOnly); nothing sensitive is
-    // kept in localStorage.
     credentials: "include",
-    headers: {
-      "Content-Type": "application/json",
-      ...(headers ?? {}),
-    },
-    body: json !== undefined ? JSON.stringify(json) : (rest.body ?? null),
+    headers: requestHeaders,
+    body: isFormData ? body : json !== undefined ? JSON.stringify(json) : (body ?? null),
   });
 
   if (response.status === 401) {
+    setSessionToken(null);
     throw new ApiError(401, "Your session has expired. Please sign in again.");
   }
   if (!response.ok) {
-    throw new ApiError(response.status, `Request failed (${response.status}).`);
+    let errorDetail = `Request failed (${response.status}).`;
+    try {
+      const errData = await response.json();
+      if (errData?.detail) {
+        errorDetail =
+          typeof errData.detail === "string" ? errData.detail : JSON.stringify(errData.detail);
+      }
+    } catch {
+      // ignore
+    }
+    throw new ApiError(response.status, errorDetail);
   }
   if (response.status === 204) return undefined;
   return await response.json();
-}
-
-/** Simulated latency for mock responses so loading states are exercised. */
-export function mockDelay(value, ms = 550) {
-  return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }

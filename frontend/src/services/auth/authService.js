@@ -1,48 +1,46 @@
-import { mockDelay } from "@/services/apiClient";
-import { mockProfile } from "@/services/mock/data";
-
-/**
- * Authentication is NOT implemented — these calls are frontend abstractions
- * only. Wire them to FastAPI (`POST /auth/login`, `/auth/register`,
- * `/auth/logout`, `GET /auth/me`) with httpOnly session cookies.
- */
-const SESSION_FLAG = "futureready.session";
-
-function readFlag() {
-  if (typeof window === "undefined") return null;
-  const raw = window.localStorage.getItem(SESSION_FLAG);
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
+import { apiRequest, setSessionToken, getSessionToken } from "../apiClient";
 
 export const authService = {
-  async login(credentials) {
-    if (!credentials.email || !credentials.password) {
-      throw new Error("Email and password are required.");
+  async register({ name, email, password }) {
+    const res = await apiRequest("/auth/register", {
+      method: "POST",
+      json: { name, email, password },
+    });
+    if (res?.session_token) {
+      setSessionToken(res.session_token);
     }
-    const user = { ...mockProfile.user, email: credentials.email };
-    await mockDelay(null, 700);
-    window.localStorage.setItem(SESSION_FLAG, JSON.stringify(user));
-    return user;
+    return res.user;
   },
 
-  async register(payload) {
-    const user = { id: "u_new", name: payload.name, email: payload.email };
-    await mockDelay(null, 700);
-    window.localStorage.setItem(SESSION_FLAG, JSON.stringify(user));
-    return user;
+  async login({ email, password }) {
+    const res = await apiRequest("/auth/login", {
+      method: "POST",
+      json: { email, password },
+    });
+    if (res?.session_token) {
+      setSessionToken(res.session_token);
+    }
+    return res.user;
+  },
+
+  async getCurrentUser() {
+    const token = getSessionToken();
+    if (!token) return null;
+    try {
+      return await apiRequest("/auth/me");
+    } catch {
+      setSessionToken(null);
+      return null;
+    }
   },
 
   async logout() {
-    await mockDelay(null, 200);
-    window.localStorage.removeItem(SESSION_FLAG);
-  },
-
-  currentUser() {
-    return readFlag();
+    try {
+      await apiRequest("/auth/logout", { method: "POST" });
+    } catch {
+      // ignore
+    } finally {
+      setSessionToken(null);
+    }
   },
 };

@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { ArrowRight, RefreshCw } from "lucide-react";
+import { ArrowRight, FileText, RefreshCw, Sparkles, UserCheck } from "lucide-react";
 
 import {
   ApplicationStatusChart,
@@ -9,10 +9,9 @@ import {
   SkillGapChart,
   TaskCompletionChart,
 } from "@/charts/DashboardCharts";
-import { JourneyStrip } from "@/components/common/JourneyStrip";
 import { ProgressBar, ProgressRing, StatusBadge } from "@/components/common/indicators";
 import { PageHeader, SectionCard, StatTile } from "@/components/common/page";
-import { CardsSkeleton, ErrorState, RowsSkeleton } from "@/components/common/states";
+import { CardsSkeleton, EmptyState, ErrorState, RowsSkeleton } from "@/components/common/states";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { useAsyncData } from "@/hooks/useAsyncData";
@@ -36,6 +35,16 @@ export function DashboardPage() {
   const dashboard = useAsyncData(() => dashboardService.getDashboardData());
   const gaps = useAsyncData(() => dashboardService.getSkillGap());
 
+  const hasData = dashboard.data?.hasData;
+  const summary = dashboard.data?.summary || {
+    careerReadiness: 0,
+    resumeScore: 0,
+    interviewReadiness: 0,
+    skillGaps: 0,
+    jobMatches: 0,
+    activeApplications: 0,
+  };
+
   return (
     <AppShell title="Dashboard">
       <PageHeader
@@ -44,7 +53,10 @@ export function DashboardPage() {
         actions={
           <Button
             variant="outline"
-            onClick={() => void dashboard.reload()}
+            onClick={() => {
+              void dashboard.reload();
+              void gaps.reload();
+            }}
             disabled={dashboard.loading}
           >
             <RefreshCw
@@ -62,55 +74,54 @@ export function DashboardPage() {
         <CardsSkeleton count={6} height={92} />
       ) : dashboard.data ? (
         <>
+          {/* Key Metric Tiles */}
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
             <StatTile
               label="Career readiness"
-              value={dashboard.data.summary.careerReadiness}
+              value={summary.careerReadiness}
               suffix="%"
-              hint="Weighted across all modules"
+              hint={hasData ? "Weighted across all modules" : "Set up profile to begin"}
             />
             <StatTile
               label="Resume score"
-              value={dashboard.data.summary.resumeScore}
+              value={summary.resumeScore}
               suffix="%"
-              hint="Last analysis"
+              hint={hasData ? "Calculated from active resume" : "No resume uploaded"}
             />
             <StatTile
               label="Interview readiness"
-              value={dashboard.data.summary.interviewReadiness}
+              value={summary.interviewReadiness}
               suffix="%"
-              hint="Backend Developer · Google"
+              hint={hasData ? "Based on solved problems" : "Not started"}
             />
             <StatTile
               label="Skill gaps"
-              value={dashboard.data.summary.skillGaps}
-              hint="2 high priority"
+              value={summary.skillGaps}
+              hint={hasData ? "Required vs candidate skills" : "Awaiting profile data"}
             />
             <StatTile
               label="Job matches"
-              value={dashboard.data.summary.jobMatches}
-              hint="From your last search"
+              value={summary.jobMatches}
+              hint={hasData ? "Matching roles found" : "Complete profile to match"}
             />
             <StatTile
               label="Active applications"
-              value={dashboard.data.summary.activeApplications}
-              hint="Saved, applied or interviewing"
+              value={summary.activeApplications}
+              hint={hasData ? "Tracked in pipeline" : "0 applications"}
             />
           </div>
 
+          {/* Recommended Next Action */}
           <SectionCard
             title="Recommended next action"
-            description="Chosen from your highest-priority gap and the modules you touched most recently."
+            description="Chosen based on your profile completeness, skill gaps and recent activity."
           >
             <div className="grid gap-4 lg:grid-cols-[auto_1fr]">
               <div className="flex items-center justify-center lg:pr-6">
-                <ProgressRing
-                  value={dashboard.data.summary.careerReadiness}
-                  caption="Career readiness"
-                />
+                <ProgressRing value={summary.careerReadiness} caption="Career readiness" />
               </div>
               <ul className="space-y-3">
-                {dashboard.data.nextActions.map((action, i) => (
+                {dashboard.data.nextActions?.map((action, i) => (
                   <li
                     key={action.id}
                     className="group flex flex-col gap-3 rounded-sm border border-border bg-surface p-4 transition-all duration-150 ease-out hover:border-border-strong sm:flex-row sm:items-center sm:justify-between"
@@ -142,47 +153,67 @@ export function DashboardPage() {
             </div>
           </SectionCard>
 
-          <div className="grid gap-4 xl:grid-cols-2">
+          {/* Dynamic Visualizations & Performance Breakdown */}
+          {hasData ? (
+            <div className="grid gap-4 xl:grid-cols-2">
+              <SectionCard
+                title="Career readiness progress"
+                description="Progress trend based on completed milestones."
+              >
+                <ReadinessTrendChart data={dashboard.data.trend || []} />
+              </SectionCard>
+              <SectionCard
+                title="Skill gap distribution"
+                description="Role requirements compared with evidence in your profile."
+              >
+                <SkillGapChart data={gaps.data || []} />
+              </SectionCard>
+            </div>
+          ) : (
             <SectionCard
-              title="Career readiness progress"
-              description="Weekly readiness across the last 6 weeks."
+              title="Career readiness journey"
+              description="Your visual performance charts will activate as soon as you add your candidate details or upload a resume."
             >
-              <ReadinessTrendChart data={dashboard.data.readinessTrend} />
+              <div className="grid gap-4 sm:grid-cols-2 py-4">
+                <div className="flex items-start gap-3 rounded-sm border border-border bg-surface-hover/50 p-4">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-accent-subtle text-accent">
+                    <UserCheck className="size-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">
+                      1. Complete Candidate Profile
+                    </h4>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Add your target roles, years of experience, and core skills to unlock target
+                      benchmark matching.
+                    </p>
+                    <Button asChild size="sm" variant="outline" className="mt-3">
+                      <Link to="/profile">Go to profile</Link>
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 rounded-sm border border-border bg-surface-hover/50 p-4">
+                  <div className="flex size-9 shrink-0 items-center justify-center rounded-sm bg-accent-subtle text-accent">
+                    <FileText className="size-5" />
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-semibold text-foreground">2. Add Your Resume</h4>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Upload a PDF or use our resume builder to generate ATS breakdown scores and
+                      tailored suggestions.
+                    </p>
+                    <Button asChild size="sm" variant="outline" className="mt-3">
+                      <Link to="/resume">Go to resume</Link>
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </SectionCard>
-            <SectionCard
-              title="Skill gap"
-              description="Role requirement compared with evidence in your profile."
-            >
-              <SkillGapChart data={dashboard.data.skillGapChart} />
-            </SectionCard>
-            <SectionCard
-              title="Interview preparation"
-              description="Progress by preparation category."
-            >
-              <InterviewProgressChart data={dashboard.data.interviewProgress} />
-            </SectionCard>
-            <SectionCard
-              title="Job match distribution"
-              description="How your matches are spread by score."
-            >
-              <JobMatchChart data={dashboard.data.jobMatchStats} />
-            </SectionCard>
-            <SectionCard
-              title="Application status"
-              description="Where your applications currently sit."
-            >
-              <ApplicationStatusChart data={dashboard.data.applicationStatus} />
-            </SectionCard>
-            <SectionCard
-              title="Task completion trend"
-              description="Planned versus completed daily tasks."
-            >
-              <TaskCompletionChart data={dashboard.data.taskCompletion} />
-            </SectionCard>
-          </div>
+          )}
         </>
       ) : null}
 
+      {/* Skill Gap Analyzer Table */}
       <SectionCard
         title="Skill gap analyzer"
         description="Target role requirement → your evidence → skill status → gap priority → learning task."
@@ -201,7 +232,7 @@ export function DashboardPage() {
           <div className="p-5">
             <RowsSkeleton />
           </div>
-        ) : (
+        ) : gaps.data && gaps.data.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full min-w-215 text-sm">
               <thead>
@@ -221,7 +252,7 @@ export function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {gaps.data?.map((gap) => (
+                {gaps.data.map((gap) => (
                   <tr
                     key={gap.id}
                     className="border-b border-border transition-colors duration-150 hover:bg-surface-hover last:border-0"
@@ -234,7 +265,7 @@ export function DashboardPage() {
                       {gap.evidence}
                     </td>
                     <td className="px-5 py-3">
-                      <StatusBadge tone={statusTone[gap.status]}>
+                      <StatusBadge tone={statusTone[gap.status] || "neutral"}>
                         {gap.status === "strong"
                           ? "Strong"
                           : gap.status === "moderate"
@@ -263,9 +294,21 @@ export function DashboardPage() {
               </tbody>
             </table>
           </div>
+        ) : (
+          <div className="p-8 text-center">
+            <p className="text-sm font-medium text-foreground">No skill gaps calculated yet</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Add your skills and target role in your profile to analyze requirements against
+              industry benchmarks.
+            </p>
+            <Button asChild size="sm" variant="outline" className="mt-3">
+              <Link to="/profile">Complete profile</Link>
+            </Button>
+          </div>
         )}
       </SectionCard>
 
+      {/* Continuous Improvement Loop */}
       <SectionCard
         title="Continuous improvement loop"
         description="Every completed task feeds back into your readiness score."

@@ -1,22 +1,26 @@
-import { mockDelay } from "@/services/apiClient";
-import { mockProfile } from "@/services/mock/data";
-
-/**
- * Replace each mock call with `apiRequest("/profile")` etc. once FastAPI
- * endpoints exist. Component code only ever talks to this module.
- */
-let cached = mockProfile;
+import { apiRequest } from "../apiClient";
 
 export const profileService = {
-  getProfile() {
-    return mockDelay(cached);
+  async getProfile() {
+    return await apiRequest("/profile");
   },
-  updateProfile(patch) {
-    cached = { ...cached, ...patch };
-    return mockDelay(cached, 400);
+
+  async updateProfile(profile) {
+    return await apiRequest("/profile", {
+      method: "PUT",
+      json: profile,
+    });
   },
-  updateTargetRoles(major, optional) {
-    cached = { ...cached, targetRoles: { major, optional } };
-    return mockDelay(cached, 300);
+
+  async updateTargetRoles(major, optional = []) {
+    const current = await this.getProfile();
+    const updated = {
+      ...current,
+      targetRoles: {
+        major: major || "",
+        optional: optional || [],
+      },
+    };
+    return await this.updateProfile(updated);
   },
 };
