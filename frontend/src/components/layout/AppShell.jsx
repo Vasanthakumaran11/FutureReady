@@ -2,12 +2,11 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   Bell,
   BriefcaseBusiness,
+  ChevronRight,
   FileText,
   LayoutDashboard,
   LogOut,
   MessagesSquare,
-  PanelLeftClose,
-  PanelLeftOpen,
   Search,
   Settings,
   Target,
@@ -55,7 +54,7 @@ function initials(name) {
 }
 
 export function AppShell({ title, children, showSearch = false }) {
-  const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [isSidebarHovered, setIsSidebarHovered] = useState(false);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -64,10 +63,6 @@ export function AppShell({ title, children, showSearch = false }) {
   const handleLogout = async () => {
     await logout();
     navigate("/login");
-  };
-
-  const toggleSidebar = () => {
-    setSidebarHidden((prev) => !prev);
   };
 
   const renderNavLink = (item) => {
@@ -80,6 +75,7 @@ export function AppShell({ title, children, showSearch = false }) {
       <Link
         key={item.href}
         to={item.href}
+        onClick={() => setIsSidebarHovered(false)}
         className={cn(
           "group relative flex items-center gap-3.5 rounded-md px-3.5 py-2.5 text-[13.5px] font-medium transition-all duration-150 ease-out",
           active
@@ -102,37 +98,61 @@ export function AppShell({ title, children, showSearch = false }) {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Sidebar Desktop */}
-      <aside
+      {/* DESKTOP HOVER HOT-ZONE: Leftmost invisible edge trigger (16px wide) */}
+      <div
+        className="fixed inset-y-0 left-0 z-40 hidden w-4 lg:block pointer-events-auto"
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        aria-hidden="true"
+      />
+
+      {/* DESKTOP HOVER TAB INDICATOR: Subtle edge notch for visual cue */}
+      <div
+        onMouseEnter={() => setIsSidebarHovered(true)}
         className={cn(
-          "fixed inset-y-0 left-0 z-30 hidden flex-col border-r border-border bg-surface transition-all duration-300 ease-out lg:flex",
-          sidebarHidden
-            ? "w-0 -translate-x-full opacity-0 pointer-events-none border-r-0"
-            : "w-64 translate-x-0 opacity-100",
+          "fixed left-0 top-1/2 -translate-y-1/2 z-40 hidden lg:flex flex-col items-center justify-center py-5 px-1 rounded-r-lg bg-surface border border-l-0 border-border text-muted-foreground hover:text-primary transition-all duration-300 cursor-pointer shadow-md group",
+          isSidebarHovered ? "opacity-0 -translate-x-full pointer-events-none" : "opacity-90 translate-x-0"
         )}
+        title="Hover leftmost edge to view sidebar"
       >
-        {/* Top Header with clickable Logo to hide navbar */}
-        <button
-          type="button"
-          onClick={toggleSidebar}
-          className="group flex h-16 w-full items-center gap-3 border-b border-border px-4.5 text-left transition-colors hover:bg-surface-hover cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-          title="Click logo to hide sidebar"
-          aria-label="Hide sidebar"
-        >
-          <Logo className="transition-transform duration-200 group-hover:scale-105" />
+        <div className="flex flex-col gap-1 items-center">
+          <span className="w-1.5 h-1.5 rounded-full bg-primary/70 group-hover:bg-primary" />
+          <span className="w-1.5 h-1.5 rounded-full bg-primary/70 group-hover:bg-primary" />
+          <span className="w-1.5 h-1.5 rounded-full bg-primary/70 group-hover:bg-primary" />
+        </div>
+      </div>
+
+      {/* BACKDROP OVERLAY (DESKTOP ONLY WHEN SIDEBAR IS HOVERED) */}
+      <div
+        className={cn(
+          "fixed inset-0 z-45 hidden lg:block bg-black/25 backdrop-blur-[1px] transition-opacity duration-300",
+          isSidebarHovered ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
+        onClick={() => setIsSidebarHovered(false)}
+        aria-hidden="true"
+      />
+
+      {/* HOVERING SIDEBAR (DESKTOP) */}
+      <aside
+        onMouseEnter={() => setIsSidebarHovered(true)}
+        onMouseLeave={() => setIsSidebarHovered(false)}
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 hidden flex-col border-r border-border bg-surface shadow-2xl transition-transform duration-300 ease-in-out lg:flex w-64",
+          isSidebarHovered ? "translate-x-0" : "-translate-x-full shadow-none pointer-events-none"
+        )}
+        aria-label="Hover navigation sidebar"
+      >
+        {/* Top Header */}
+        <div className="flex h-16 w-full items-center gap-3 border-b border-border px-4.5">
+          <Logo className="transition-transform duration-200 hover:scale-105" />
           <div className="min-w-0 flex-1">
-            <span className="block truncate text-sm font-semibold tracking-tight text-foreground">
+            <span className="block truncate text-sm font-bold tracking-tight text-foreground">
               FutureReady
             </span>
             <span className="block text-[10px] font-medium text-tertiary uppercase tracking-wider">
               Career Hub
             </span>
           </div>
-          <PanelLeftClose
-            className="size-4 text-muted-foreground opacity-0 transition-opacity duration-150 group-hover:opacity-100"
-            aria-hidden
-          />
-        </button>
+        </div>
 
         {/* Main Navigation Scroll Area */}
         <nav
@@ -175,7 +195,7 @@ export function AppShell({ title, children, showSearch = false }) {
             <Button
               variant="ghost"
               size="icon"
-              className="size-7 text-muted-foreground hover:text-destructive hover:bg-danger-soft"
+              className="size-7 text-muted-foreground hover:text-destructive hover:bg-danger-soft cursor-pointer"
               onClick={() => void handleLogout()}
               title="Log out"
             >
@@ -185,33 +205,24 @@ export function AppShell({ title, children, showSearch = false }) {
         </div>
       </aside>
 
-      {/* Main Content Area — dynamically expands when sidebar is hidden */}
-      <div
-        className={cn(
-          "flex min-h-screen flex-col transition-all duration-300 ease-out",
-          sidebarHidden ? "lg:pl-0" : "lg:pl-64",
-        )}
-      >
+      {/* MAIN CONTENT WRAPPER (FULL WIDTH IN DESKTOP VIEW) */}
+      <div className="flex min-h-screen flex-col w-full">
         {/* Top bar (64px) */}
         <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-border bg-surface px-4 sm:px-6">
-          {/* Clickable Logo in topbar to toggle sidebar on desktop and mobile */}
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            className="group flex items-center gap-2.5 rounded-md p-1 transition-colors hover:bg-surface-hover cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            title={sidebarHidden ? "Show sidebar" : "Hide sidebar"}
-            aria-label={sidebarHidden ? "Show sidebar" : "Hide sidebar"}
+          <Link
+            to="/dashboard"
+            className="group flex items-center gap-2.5 rounded-md p-1 transition-colors hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            title="FutureReady Career Hub"
           >
             <Logo className="transition-transform duration-200 group-hover:scale-105" />
-            {sidebarHidden ? (
-              <div className="hidden items-center gap-1.5 sm:flex">
-                <span className="text-sm font-semibold tracking-tight text-foreground">
-                  FutureReady
-                </span>
-                <PanelLeftOpen className="size-3.5 text-muted-foreground" aria-hidden />
-              </div>
-            ) : null}
-          </button>
+            <div className="flex items-center gap-1.5">
+              <span className="text-sm font-bold tracking-tight text-foreground">
+                FutureReady
+              </span>
+            </div>
+          </Link>
+
+          <div className="h-4 w-px bg-border mx-1 hidden sm:block" />
 
           <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground sm:text-base">
             {title}
@@ -235,7 +246,7 @@ export function AppShell({ title, children, showSearch = false }) {
             <Button
               variant="ghost"
               size="icon"
-              className="size-9 rounded-sm text-muted-foreground hover:bg-surface-hover hover:text-foreground"
+              className="size-9 rounded-sm text-muted-foreground hover:bg-surface-hover hover:text-foreground cursor-pointer"
               aria-label="Notifications"
             >
               <Bell className="size-4.5" aria-hidden />
@@ -250,7 +261,7 @@ export function AppShell({ title, children, showSearch = false }) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex items-center gap-2 rounded-sm p-1 text-left transition-colors duration-150 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                className="flex items-center gap-2 rounded-sm p-1 text-left transition-colors duration-150 hover:bg-surface-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent cursor-pointer"
                 aria-label="User account menu"
               >
                 <span className="flex size-8 items-center justify-center rounded-full border border-border bg-accent-subtle text-xs font-semibold text-accent">
@@ -286,14 +297,9 @@ export function AppShell({ title, children, showSearch = false }) {
           </DropdownMenu>
         </header>
 
-        {/* Page body — dynamically sized */}
+        {/* Page body */}
         <main className="flex-1 px-4 py-6 sm:px-6 md:px-8 pb-24 lg:pb-12">
-          <div
-            className={cn(
-              "mx-auto w-full transition-all duration-300 ease-out space-y-6",
-              sidebarHidden ? "max-w-[1600px]" : "max-w-360",
-            )}
-          >
+          <div className="mx-auto w-full max-w-[1600px] space-y-6">
             {children}
           </div>
         </main>

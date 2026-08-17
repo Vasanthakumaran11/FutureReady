@@ -260,23 +260,20 @@ export function ResumeIndexPage() {
           >
             <ul className="space-y-2.5 text-xs sm:text-sm text-muted-foreground">
               <li className="flex items-start gap-2">
-                <Check className="size-4 text-accent mt-0.5 shrink-0" />
                 <span>
                   <strong>Skills-driven</strong>: Automatically tailors sections based on your
                   candidate skills and target role.
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <Check className="size-4 text-accent mt-0.5 shrink-0" />
                 <span>
                   <strong>AI Bullet Generator</strong>: Converts brief descriptions into 3
                   professional variants (technical depth, impact, leadership).
                 </span>
               </li>
               <li className="flex items-start gap-2">
-                <Check className="size-4 text-accent mt-0.5 shrink-0" />
                 <span>
-                  <strong>ATS-Optimized Templates</strong>: Clean, single-column structures
+                  <strong>ATS-Optimized Template</strong>: Clean, single-column structures
                   engineered for high ATS parsing accuracy.
                 </span>
               </li>

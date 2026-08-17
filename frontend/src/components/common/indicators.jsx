@@ -34,12 +34,11 @@ const skillTone = {
 };
 
 export function SkillBadge({ name, level }) {
-  const symbol = level === "strong" ? "✓" : level === "moderate" ? "⚠" : "✕";
   return (
-    <StatusBadge tone={skillTone[level]}>
-      <span aria-hidden className="font-mono text-[11px] font-semibold">
-        {symbol}
-      </span>
+    <StatusBadge
+      tone={skillTone[level]}
+      className="font-medium text-xs px-2.5 py-0.5 rounded-full"
+    >
       <span>{name}</span>
       <span className="sr-only">{level}</span>
     </StatusBadge>

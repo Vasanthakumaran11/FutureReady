@@ -171,9 +171,7 @@ export function LoginPage() {
 
           <div className="relative flex items-center justify-center">
             <div className="border-t border-border w-full" />
-            <span className="bg-surface px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Or with email
-            </span>
+            <span className="font-bold ">OR</span>
             <div className="border-t border-border w-full" />
           </div>
         </div>
@@ -235,7 +233,7 @@ export function LoginPage() {
               <Checkbox id="remember" /> Remember me
             </label>
             <Link to="/forgot-password" className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline">
-              Forgot password?
+            Forgot password?
             </Link>
           </div>
 

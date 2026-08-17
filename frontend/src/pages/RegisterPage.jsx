@@ -179,9 +179,7 @@ export function RegisterPage() {
 
           <div className="relative flex items-center justify-center">
             <div className="border-t border-border w-full" />
-            <span className="bg-surface px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Or with email
-            </span>
+            <span className="font-bold ">OR</span>
             <div className="border-t border-border w-full" />
           </div>
         </div>

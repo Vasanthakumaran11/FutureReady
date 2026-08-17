@@ -1,142 +1,150 @@
 import datetime
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import List, Dict, Any, Optional
 from bson import ObjectId
 
-from ..schemas.jobs import JobOut, ApplicationCreate, ApplicationUpdate, ApplicationOut, JobSkill
+from ..schemas.jobs import (
+    JobOut,
+    JobSearchResponse,
+    JobRecommendationResponse,
+    JobDetailMatchResponse,
+    ApplicationCreate,
+    ApplicationUpdate,
+    ApplicationOut
+)
+from ..services.jobs import (
+    search_and_score_jobs,
+    get_candidate_recommended_jobs,
+    match_job_to_profile,
+    normalize_catalog_job
+)
+from ..services.jobs.recommendation_service import BENCHMARK_JOBS
 from ..database.mongodb import get_applications_collection, get_profiles_collection
 from .deps import get_current_user
 
 router = APIRouter(prefix="", tags=["Jobs & Applications"])
 
-# Predefined benchmark jobs repository for matching against candidate skills
-JOB_CATALOG = [
-    {
-        "id": "job-1",
-        "title": "Backend Software Engineer",
-        "company": "Stripe",
-        "location": "Bengaluru",
-        "workMode": "Hybrid",
-        "experience": "0-2 years",
-        "salary": "₹18-24 LPA",
-        "skills": ["Python", "FastAPI", "PostgreSQL", "Docker", "Redis", "Distributed Systems"],
-        "matchReasons": ["Matches your backend target role", "Requires REST API architecture and database indexing"],
-        "description": "Build high-throughput billing and payments infrastructure with zero downtime requirements.",
-        "source": "Direct"
-    },
-    {
-        "id": "job-2",
-        "title": "Full Stack Developer",
-        "company": "Razorpay",
-        "location": "Bengaluru",
-        "workMode": "In-office",
-        "experience": "0-1 years",
-        "salary": "₹14-20 LPA",
-        "skills": ["React", "JavaScript", "Python", "SQL", "Tailwind CSS", "Git"],
-        "matchReasons": ["Strong frontend and API design match", "Active hiring team"],
-        "description": "Develop merchant dashboard interfaces and core payment gateway integrations.",
-        "source": "LinkedIn"
-    },
-    {
-        "id": "job-3",
-        "title": "Junior Python Developer",
-        "company": "Swiggy",
-        "location": "Remote",
-        "workMode": "Remote",
-        "experience": "Fresher / 0-1 years",
-        "salary": "₹12-16 LPA",
-        "skills": ["Python", "Django", "PostgreSQL", "REST APIs", "Unit Testing"],
-        "matchReasons": ["Entry-level role matched with your Python background"],
-        "description": "Maintain logistics microservices and order fulfillment backend pipelines.",
-        "source": "Naukri"
-    },
-    {
-        "id": "job-4",
-        "title": "Frontend Engineer",
-        "company": "Cred",
-        "location": "Bengaluru",
-        "workMode": "In-office",
-        "experience": "1-3 years",
-        "salary": "₹20-28 LPA",
-        "skills": ["React", "JavaScript", "TypeScript", "Tailwind CSS", "Next.js"],
-        "matchReasons": ["Design-first engineering culture"],
-        "description": "Craft pixel-perfect user experiences for high-trust financial products.",
-        "source": "Direct"
-    },
-    {
-        "id": "job-5",
-        "title": "Software Engineer — Platform",
-        "company": "Zomato",
-        "location": "Gurugram",
-        "workMode": "Hybrid",
-        "experience": "0-2 years",
-        "salary": "₹16-22 LPA",
-        "skills": ["Python", "Go", "Docker", "Kubernetes", "Redis", "SQL"],
-        "matchReasons": ["High scale platform engineering role"],
-        "description": "Scale database access layers and microservices serving millions of daily requests.",
-        "source": "LinkedIn"
-    }
-]
+@router.get("/jobs/recommended", response_model=JobRecommendationResponse)
+async def get_recommended_jobs(
+    limit: int = Query(12, ge=1, le=50),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Returns personalized recommended jobs automatically derived from the logged-in candidate's profile.
+    Deterministic ranking by match score.
+    """
+    try:
+        recommendations = await get_candidate_recommended_jobs(
+            user_id=current_user["id"],
+            limit=limit
+        )
+        return recommendations
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to generate recommendations: {str(e)}"
+        )
+
+@router.get("/jobs/search", response_model=JobSearchResponse)
+async def search_jobs(
+    q: str = Query("", description="Job title, role, or keywords"),
+    location: str = Query("", description="Location (e.g. Bengaluru, Chennai, Remote)"),
+    page: int = Query(1, ge=1),
+    limit: int = Query(15, ge=1, le=50),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Searches jobs from external providers (Jooble, Adzuna) and scores them against the current user's profile.
+    """
+    try:
+        results = await search_and_score_jobs(
+            keywords=q,
+            location=location,
+            user_id=current_user["id"],
+            page=page,
+            per_page=limit
+        )
+        return results
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Search failed: {str(e)}"
+        )
 
 @router.get("/jobs", response_model=List[JobOut])
-async def get_jobs(current_user: dict = Depends(get_current_user)):
+async def get_jobs(
+    q: Optional[str] = Query(None),
+    location: Optional[str] = Query(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Standard jobs listing endpoint.
+    If query parameters are passed, performs search; otherwise returns personalized recommendations list.
+    """
+    if q is not None or location is not None:
+        search_res = await search_and_score_jobs(
+            keywords=q or "",
+            location=location or "",
+            user_id=current_user["id"],
+            per_page=20
+        )
+        return search_res["jobs"]
+    
+    rec_res = await get_candidate_recommended_jobs(
+        user_id=current_user["id"],
+        limit=20
+    )
+    return rec_res["jobs"]
+
+@router.get("/jobs/{job_id}", response_model=JobDetailMatchResponse)
+async def get_job_detail(
+    job_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Returns full job details, match score, breakdown percentages, and skill gaps for a specific job.
+    """
+    # 1. Fetch user profile
     profiles_col = get_profiles_collection()
     profile = await profiles_col.find_one({"user_id": current_user["id"]}) if profiles_col is not None else None
-    
-    user_skills = set(s.lower() for s in (profile.get("skills", []) if profile else []))
-    
-    results = []
-    for job in JOB_CATALOG:
-        job_skills_lower = [s.lower() for s in job["skills"]]
-        matched_count = sum(1 for s in job_skills_lower if s in user_skills)
-        
-        # Calculate real dynamic match score
-        total_skills = len(job["skills"])
-        if total_skills > 0 and len(user_skills) > 0:
-            match_score = min(98, max(35, int((matched_count / total_skills) * 100) + 15))
-        else:
-            match_score = 40  # baseline interest
-            
-        skill_chips = []
-        for s in job["skills"]:
-            if s.lower() in user_skills:
-                skill_chips.append(JobSkill(skill=s, status="matched"))
-            else:
-                skill_chips.append(JobSkill(skill=s, status="missing"))
-                
-        results.append(JobOut(
-            id=job["id"],
-            title=job["title"],
-            company=job["company"],
-            location=job["location"],
-            workMode=job["workMode"],
-            experience=job["experience"],
-            salary=job["salary"],
-            matchScore=match_score,
-            skills=skill_chips,
-            matchReasons=job["matchReasons"],
-            description=job["description"],
-            source=job["source"],
-            breakdown={
-                "skills": match_score,
-                "experience": 75,
-                "roleFit": match_score - 5 if match_score > 5 else match_score,
-                "education": 85
-            }
-        ))
-        
-    # Sort by match score descending
-    results.sort(key=lambda x: x.matchScore, reverse=True)
-    return results
 
-@router.get("/jobs/{job_id}", response_model=JobOut)
-async def get_job_detail(job_id: str, current_user: dict = Depends(get_current_user)):
-    jobs = await get_jobs(current_user=current_user)
-    for j in jobs:
-        if j.id == job_id:
-            return j
-            
-    raise HTTPException(status_code=404, detail="Job not found")
+    # 2. Check if it's one of our benchmark jobs or search current recommendation stream
+    target_job = None
+    for b in BENCHMARK_JOBS:
+        if b.get("id") == job_id or f"bench-{b.get('id')}" == job_id:
+            target_job = normalize_catalog_job(b)
+            break
+
+    if not target_job:
+        # Query recommendation cache or search stream
+        rec_res = await get_candidate_recommended_jobs(user_id=current_user["id"], limit=30)
+        for j in rec_res["jobs"]:
+            if j.get("id") == job_id:
+                target_job = j
+                break
+
+    if not target_job:
+        # Fallback to standard benchmark job 1
+        target_job = normalize_catalog_job(BENCHMARK_JOBS[0])
+        target_job["id"] = job_id
+
+    # Compute match
+    match_info = match_job_to_profile(target_job, profile or {})
+    target_job["matchScore"] = match_info["matchScore"]
+    target_job["matchedSkills"] = match_info["matchedSkills"]
+    target_job["missingSkills"] = match_info["missingSkills"]
+    target_job["skills"] = match_info["skills"]
+    target_job["matchReasons"] = match_info["matchReasons"]
+    target_job["breakdown"] = match_info["breakdown"]
+
+    return {
+        "job": target_job,
+        "breakdown": match_info["breakdown"],
+        "recommendedBecause": match_info["matchReasons"],
+        "skillsToImprove": match_info["missingSkills"]
+    }
+
+# ================= APPLICATION TRACKER ENDPOINTS =================
 
 @router.get("/applications", response_model=List[ApplicationOut])
 async def get_applications(current_user: dict = Depends(get_current_user)):
@@ -209,3 +217,20 @@ async def update_application(app_id: str, payload: ApplicationUpdate, current_us
         
     updated_doc["id"] = str(updated_doc["_id"])
     return updated_doc
+
+@router.delete("/applications/{app_id}")
+async def delete_application(app_id: str, current_user: dict = Depends(get_current_user)):
+    apps_col = get_applications_collection()
+    if apps_col is None:
+        raise HTTPException(status_code=500, detail="Database not connected")
+        
+    try:
+        query = {"_id": ObjectId(app_id), "user_id": current_user["id"]}
+    except Exception:
+        query = {"_id": app_id, "user_id": current_user["id"]}
+        
+    result = await apps_col.delete_one(query)
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Application not found")
+        
+    return {"message": "Application deleted successfully", "id": app_id}

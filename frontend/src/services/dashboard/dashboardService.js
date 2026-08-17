@@ -9,11 +9,13 @@ export const dashboardService = {
     return await apiRequest("/dashboard/summary");
   },
 
-  async getSkillGap() {
-    return await apiRequest("/dashboard/gaps");
+  async getSkillGap(jobId = null) {
+    const query = jobId ? `?job_id=${encodeURIComponent(jobId)}` : "";
+    return await apiRequest(`/skills/gaps${query}`);
   },
 
-  async getGaps() {
-    return await apiRequest("/dashboard/gaps");
+  async getGaps(jobId = null) {
+    const query = jobId ? `?job_id=${encodeURIComponent(jobId)}` : "";
+    return await apiRequest(`/skills/gaps${query}`);
   },
 };

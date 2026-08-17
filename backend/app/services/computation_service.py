@@ -161,23 +161,81 @@ async def compute_dashboard_data(user_id: str) -> Dict[str, Any]:
         "hasData": True
     }
 
-async def compute_skill_gaps(user_id: str) -> List[Dict[str, Any]]:
+async def compute_skill_gaps(user_id: str, job_id: str = None) -> List[Dict[str, Any]]:
     profiles_col = get_profiles_collection()
     if profiles_col is None:
         return []
         
     profile = await profiles_col.find_one({"user_id": user_id})
-    if not profile or not profile.get("skills"):
-        return []
-        
-    user_skills = set(s.lower() for s in profile.get("skills", []))
-    target_role = profile.get("targetRoles", {}).get("major", "Backend Developer")
+    user_skills = set(s.lower() for s in (profile.get("skills", []) if profile else []))
+    target_role = profile.get("targetRoles", {}).get("major", "Software Engineer") if profile else "Software Engineer"
     
+    # If job_id is provided, prioritize the specific job's requirements
+    if job_id:
+        from .jobs.recommendation_service import BENCHMARK_JOBS, get_candidate_recommended_jobs
+        from .jobs.job_normalizer import normalize_catalog_job
+        
+        target_job = None
+        for b in BENCHMARK_JOBS:
+            if b.get("id") == job_id or f"bench-{b.get('id')}" == job_id:
+                target_job = normalize_catalog_job(b)
+                break
+                
+        if not target_job:
+            rec_res = await get_candidate_recommended_jobs(user_id=user_id, limit=30)
+            for j in rec_res.get("jobs", []):
+                if j.get("id") == job_id:
+                    target_job = j
+                    break
+                    
+        if not target_job:
+            target_job = normalize_catalog_job(BENCHMARK_JOBS[0])
+            target_job["id"] = job_id
+            
+        job_skills = target_job.get("required_skills", []) or [s.get("skill") if isinstance(s, dict) else s for s in target_job.get("skills", [])]
+        if not job_skills:
+            job_skills = ["Python", "FastAPI", "PostgreSQL", "Docker", "Git"]
+            
+        job_title = target_job.get("title", "this position")
+        company = target_job.get("company", "the employer")
+        
+        gaps = []
+        for idx, skill in enumerate(job_skills):
+            skill_name = skill.get("skill") if isinstance(skill, dict) else str(skill)
+            is_present = skill_name.lower() in user_skills or any(skill_name.lower() in us for us in user_skills)
+            
+            if is_present:
+                gaps.append({
+                    "id": f"job-skill-{idx+1}",
+                    "skill": skill_name,
+                    "requirement": f"Core requirement for {job_title} at {company}",
+                    "evidence": "Verified match in your candidate profile & resume",
+                    "status": "strong",
+                    "priority": "low",
+                    "learningTask": f"Proficiency verified. Highlight your {skill_name} projects during interview."
+                })
+            else:
+                gaps.append({
+                    "id": f"job-skill-{idx+1}",
+                    "skill": skill_name,
+                    "requirement": f"Essential technical requirement for {job_title} at {company}",
+                    "evidence": "Missing from your profile / resume - required by this job",
+                    "status": "missing",
+                    "priority": "high",
+                    "learningTask": f"Complete hands-on tutorials and build a module using {skill_name} to qualify for {company}."
+                })
+                
+        # Sort so missing high-priority skills come first
+        gaps.sort(key=lambda x: 0 if x["status"] == "missing" else 1)
+        return gaps
+
+    # Default Target Role gap analysis
     ROLE_REQUIREMENTS = [
         {"skill": "Docker", "requirement": "Containerization & deployment pipelines", "priority": "high", "task": "Complete containerization module and deploy a container"},
         {"skill": "PostgreSQL / SQL", "requirement": "Database design and query optimization", "priority": "high", "task": "Solve 5 SQL query exercises on indexing and joins"},
         {"skill": "Redis", "requirement": "Caching and asynchronous message queues", "priority": "medium", "task": "Implement caching on top endpoints"},
         {"skill": "System Design", "requirement": "Architecting scalable services", "priority": "medium", "task": "Review load balancing and microservice architecture patterns"},
+        {"skill": "Git & CI/CD", "requirement": "Version control and automated pipelines", "priority": "medium", "task": "Set up GitHub Actions workflow for automated testing"},
     ]
     
     gaps = []
@@ -188,7 +246,7 @@ async def compute_skill_gaps(user_id: str) -> List[Dict[str, Any]]:
                 "id": f"gap-{idx+1}",
                 "skill": item["skill"],
                 "requirement": item["requirement"],
-                "evidence": "No evidence recorded in profile or resume",
+                "evidence": f"Missing from candidate profile for {target_role}",
                 "status": "missing",
                 "priority": item["priority"],
                 "learningTask": item["task"]
@@ -204,4 +262,5 @@ async def compute_skill_gaps(user_id: str) -> List[Dict[str, Any]]:
                 "learningTask": "Verified proficiency"
             })
             
+    gaps.sort(key=lambda x: 0 if x["status"] == "missing" else 1)
     return gaps

@@ -1,7 +1,6 @@
 import { ChevronDown, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { JourneyStrip } from "@/components/common/JourneyStrip";
 import { StatusBadge, applicationStatusMeta } from "@/components/common/indicators";
 import { PageHeader, SectionCard, StatTile } from "@/components/common/page";
 import { EmptyState, ErrorState, RowsSkeleton } from "@/components/common/states";
@@ -18,18 +17,46 @@ import { jobService } from "@/services/jobs/jobService";
 
 const COLUMNS = ["saved", "applied", "interview", "offer", "rejected"];
 
+// Normalizes status strings from various sources
+const normalizeStatus = (status) => {
+  if (!status) return "saved";
+  const s = status.toLowerCase();
+  if (s === "interviewing" || s === "interview") return "interview";
+  if (s === "offered" || s === "offer") return "offer";
+  if (s === "reject" || s === "rejected") return "rejected";
+  if (s === "applied") return "applied";
+  return "saved";
+};
+
 export function ApplicationsPage() {
   const { data, loading, error, reload, setData } = useAsyncData(() =>
     jobService.getApplications(),
   );
 
-  const move = async (id, status) => {
-    setData(await jobService.updateApplication(id, { status }));
-    toast.success(`Moved to ${applicationStatusMeta[status].label}`);
+  const applications = Array.isArray(data) ? data : [];
+
+  const move = async (id, newStatus) => {
+    try {
+      await jobService.updateApplication(id, { status: newStatus });
+      setData((prev) =>
+        Array.isArray(prev)
+          ? prev.map((item) => (item.id === id ? { ...item, status: newStatus } : item))
+          : []
+      );
+      toast.success(`Moved to ${applicationStatusMeta[newStatus]?.label || newStatus}`);
+    } catch {
+      toast.error("Failed to update status");
+    }
   };
 
   const remove = async (id) => {
-    setData(await jobService.removeApplication(id));
+    try {
+      await jobService.removeApplication(id);
+      setData((prev) => (Array.isArray(prev) ? prev.filter((item) => item.id !== id) : []));
+      toast.success("Application removed from tracker");
+    } catch {
+      toast.error("Failed to remove application");
+    }
   };
 
   return (
@@ -42,31 +69,35 @@ export function ApplicationsPage() {
       {error ? <ErrorState message={error} onRetry={reload} /> : null}
       {loading && !data ? <RowsSkeleton count={4} /> : null}
 
-      {data && data.length === 0 ? (
+      {!loading && applications.length === 0 ? (
         <EmptyState
           title="No applications yet"
-          description="Save a matched job from the job search to start tracking it."
+          description="Save a matched job from Job Search to start tracking your applications."
         />
       ) : null}
 
-      {data && data.length > 0 ? (
+      {applications.length > 0 ? (
         <>
           <div className="grid gap-4 sm:grid-cols-3">
-            <StatTile label="Total tracked" value={data.length} />
+            <StatTile label="Total tracked" value={applications.length} />
             <StatTile
               label="In interview"
-              value={data.filter((a) => a.status === "interview").length}
+              value={applications.filter((a) => normalizeStatus(a.status) === "interview").length}
             />
-            <StatTile label="Offers" value={data.filter((a) => a.status === "offer").length} />
+            <StatTile
+              label="Offers"
+              value={applications.filter((a) => normalizeStatus(a.status) === "offer").length}
+            />
           </div>
 
           <div className="grid gap-4 lg:grid-cols-5">
             {COLUMNS.map((col) => {
-              const items = data.filter((a) => a.status === col);
+              const items = applications.filter((a) => normalizeStatus(a.status) === col);
+              const meta = applicationStatusMeta[col] || { label: col, tone: "neutral" };
               return (
                 <SectionCard
                   key={col}
-                  title={applicationStatusMeta[col].label}
+                  title={meta.label}
                   description={`${items.length} tracked`}
                   bodyClassName="p-3.5"
                 >
@@ -74,30 +105,36 @@ export function ApplicationsPage() {
                     {items.map((app) => (
                       <li
                         key={app.id}
-                        className="group rounded-sm border border-border bg-surface p-3.5 shadow-card transition-all duration-150 ease-out hover:-translate-y-0.5 hover:border-border-strong"
+                        className="group rounded-lg border border-border bg-surface p-3.5 shadow-card transition-all duration-150 ease-out hover:-translate-y-0.5 hover:border-border-strong flex flex-col justify-between"
                       >
-                        <p className="text-sm font-semibold text-foreground">{app.jobTitle}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                          {app.company} · {app.location}
-                        </p>
-                        <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
-                          <StatusBadge tone={applicationStatusMeta[col].tone}>
-                            {app.matchScore}% match
-                          </StatusBadge>
-                          <StatusBadge tone="neutral">{app.appliedDate}</StatusBadge>
+                        <div>
+                          <p className="text-sm font-bold text-foreground">{app.jobTitle}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {app.company} · {app.location || "Location not specified"}
+                          </p>
+                          <div className="mt-2.5 flex flex-wrap items-center gap-1.5">
+                            <StatusBadge tone={meta.tone}>
+                              {app.matchScore || 0}% match
+                            </StatusBadge>
+                            {app.appliedDate ? (
+                              <StatusBadge tone="neutral">{app.appliedDate}</StatusBadge>
+                            ) : null}
+                          </div>
+                          {app.notes ? (
+                            <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                              {app.notes}
+                            </p>
+                          ) : null}
                         </div>
-                        {app.notes ? (
-                          <p className="mt-2 text-xs text-muted-foreground">{app.notes}</p>
-                        ) : null}
 
-                        {/* Consolidated status control dropdown */}
-                        <div className="mt-3 flex items-center justify-between gap-1.5 border-t border-border/40 pt-2.5">
+                        {/* Status dropdown & Delete action */}
+                        <div className="mt-3.5 flex items-center justify-between gap-1.5 border-t border-border/50 pt-2.5">
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+                                className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                               >
                                 Move status{" "}
                                 <ChevronDown className="size-3 ml-0.5 opacity-60" aria-hidden />
@@ -113,7 +150,7 @@ export function ApplicationsPage() {
                                   onClick={() => void move(app.id, c)}
                                   className="text-xs font-medium cursor-pointer hover:bg-surface-hover"
                                 >
-                                  Move to {applicationStatusMeta[c].label}
+                                  Move to {applicationStatusMeta[c]?.label || c}
                                 </DropdownMenuItem>
                               ))}
                             </DropdownMenuContent>
@@ -122,9 +159,10 @@ export function ApplicationsPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-danger-soft"
+                            className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive hover:bg-danger-soft cursor-pointer"
                             aria-label={`Remove ${app.jobTitle}`}
                             onClick={() => void remove(app.id)}
+                            title="Remove from tracker"
                           >
                             <Trash2 className="size-3.5" aria-hidden />
                           </Button>
@@ -132,7 +170,9 @@ export function ApplicationsPage() {
                       </li>
                     ))}
                     {items.length === 0 ? (
-                      <li className="py-4 text-center text-xs text-tertiary">Nothing here yet.</li>
+                      <li className="py-6 text-center text-xs text-muted-foreground">
+                        No jobs in this column.
+                      </li>
                     ) : null}
                   </ul>
                 </SectionCard>
