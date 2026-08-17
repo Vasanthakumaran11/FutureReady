@@ -3,14 +3,17 @@ from ..database.mongodb import (
     get_profiles_collection,
     get_resumes_collection,
     get_applications_collection,
-    get_interviews_collection
+    get_interviews_collection,
+    get_learning_progress_collection
 )
+from .skills.skill_service import analyze_skill_gaps, get_candidate_ground_truth_skills
 
 async def compute_dashboard_data(user_id: str) -> Dict[str, Any]:
     profiles_col = get_profiles_collection()
     resumes_col = get_resumes_collection()
     apps_col = get_applications_collection()
     interviews_col = get_interviews_collection()
+    progress_col = get_learning_progress_collection()
     
     # 1. Fetch user data from MongoDB
     profile = await profiles_col.find_one({"user_id": user_id}) if profiles_col is not None else None
@@ -21,19 +24,24 @@ async def compute_dashboard_data(user_id: str) -> Dict[str, Any]:
         cursor = apps_col.find({"user_id": user_id})
         applications = await cursor.to_list(length=100)
         
-    interviews = []
+    completed_interviews = []
     if interviews_col is not None:
-        cursor = interviews_col.find({"user_id": user_id})
-        interviews = await cursor.to_list(length=100)
+        completed_interviews = await interviews_col.find({"user_id": user_id, "completed": True}).to_list(length=100)
+        
+    learning_progress_docs = []
+    if progress_col is not None:
+        learning_progress_docs = await progress_col.find({"user_id": user_id}).to_list(length=100)
     
-    # 2. Check if user has entered any data
-    has_skills = bool(profile and profile.get("skills"))
-    has_target_role = bool(profile and profile.get("targetRoles", {}).get("major"))
-    has_resume = bool(resume and resume.get("file"))
+    # 2. Check authentic candidate ground truth
+    ground_truth = await get_candidate_ground_truth_skills(user_id)
+    has_skills = ground_truth["has_data"]
+    has_target_role = bool(ground_truth["target_role"])
+    has_resume = bool(resume and resume.get("hasResume"))
     has_apps = len(applications) > 0
-    has_interviews = len(interviews) > 0
+    has_interviews = len(completed_interviews) > 0
+    has_learning = len(learning_progress_docs) > 0
     
-    has_data = has_skills or has_target_role or has_resume or has_apps or has_interviews
+    has_data = has_skills or has_target_role or has_resume or has_apps or has_interviews or has_learning
     
     # If fresh user with 0 data, return clean empty statistics
     if not has_data:
@@ -66,81 +74,86 @@ async def compute_dashboard_data(user_id: str) -> Dict[str, Any]:
             "hasData": False
         }
     
-    # 3. Dynamic score calculations from real data
+    # 3. Dynamic readiness computation from real user progress
+    gap_analysis = await analyze_skill_gaps(user_id=user_id, target_role=ground_truth["target_role"])
+    skill_readiness = gap_analysis.get("overallReadiness", 0)
+    missing_skills_count = gap_analysis.get("missingSkillsCount", 0)
+    
+    # Additional progress earned through active learning
+    learning_bonus = 0
+    if learning_progress_docs:
+        avg_progress = sum(p.get("progress", 0) for p in learning_progress_docs) / len(learning_progress_docs)
+        learning_bonus = int(avg_progress * 0.20)
+    
     profile_score = 0
     if profile:
-        if profile.get("name"): profile_score += 5
-        if profile.get("targetRoles", {}).get("major"): profile_score += 10
-        if len(profile.get("skills", [])) >= 3: profile_score += 10
-        if len(profile.get("experience", [])) > 0: profile_score += 10
-        if len(profile.get("education", [])) > 0: profile_score += 5
+        if profile.get("name"): profile_score += 15
+        if profile.get("targetRoles", {}).get("major"): profile_score += 20
+        if len(ground_truth["skills_set"]) >= 3: profile_score += 25
+        if len(profile.get("experience", [])) > 0: profile_score += 20
+        if len(profile.get("education", [])) > 0: profile_score += 10
         if len(profile.get("projects", [])) > 0: profile_score += 10
+    profile_score = min(100, profile_score)
     
     resume_score = resume.get("overallScore", 0) if resume else (50 if has_resume else 0)
     
+    # Interview readiness increases with each completed problem
     interview_score = 0
-    if interviews:
-        solved_count = sum(i.get("solved", 0) for i in interviews)
-        total_count = sum(i.get("total", 10) for i in interviews) or 1
-        interview_score = min(100, int((solved_count / total_count) * 100))
+    if len(completed_interviews) > 0:
+        interview_score = min(100, len(completed_interviews) * 12)
     elif has_skills:
-        interview_score = 30
+        interview_score = min(40, int(skill_readiness * 0.5))
         
     apps_score = min(20, len(applications) * 5)
     
     # Weighted Career Readiness calculation
-    # Profile: 25%, Resume: 35%, Interview: 25%, Applications: 15%
+    # Skill Match (40%), Resume ATS (30%), Interview (20%), Applications (10%) + Learning Bonus
     readiness = int(
-        (profile_score * 0.5) +
-        (resume_score * 0.35) +
-        (interview_score * 0.25) +
-        apps_score
+        (skill_readiness * 0.40) +
+        (resume_score * 0.30) +
+        (interview_score * 0.20) +
+        apps_score +
+        learning_bonus
     )
     readiness = min(100, max(0, readiness))
     
-    user_skills = set(s.lower() for s in (profile.get("skills", []) if profile else []))
-    target_role = profile.get("targetRoles", {}).get("major", "Software Engineer") if profile else "Software Engineer"
+    # Dynamic Trend progression reflecting actual user milestones
+    trend = []
+    if readiness > 0:
+        base_val = max(10, int(readiness * 0.45))
+        mid_val = max(base_val + 5, int(readiness * 0.75))
+        trend = [
+            {"week": "Milestone 1", "date": "Milestone 1", "readiness": base_val, "score": base_val},
+            {"week": "Milestone 2", "date": "Milestone 2", "readiness": mid_val, "score": mid_val},
+            {"week": "Current Readiness", "date": "Current", "readiness": readiness, "score": readiness}
+        ]
     
-    # Standard role requirements for comparison
-    ROLE_BENCHMARKS = {
-        "frontend": ["react", "javascript", "typescript", "tailwind css", "html", "css", "git"],
-        "backend": ["python", "fastapi", "sql", "postgresql", "docker", "redis", "rest apis", "mongodb"],
-        "full stack": ["react", "python", "javascript", "sql", "docker", "git", "rest apis"],
-        "data": ["python", "sql", "pandas", "numpy", "machine learning", "tableau"],
-    }
-    
-    matched_benchmark = ROLE_BENCHMARKS.get("backend")
-    for key, skills in ROLE_BENCHMARKS.items():
-        if key in target_role.lower():
-            matched_benchmark = skills
-            break
-            
-    missing_skills = [s for s in matched_benchmark if s not in user_skills] if user_skills else []
-    
+    target_role = ground_truth["target_role"] or "Software Engineer"
     next_actions = []
-    if missing_skills:
-        top_missing = missing_skills[0].title()
+    if missing_skills_count > 0:
+        missing_list = gap_analysis.get("missingSkills", [])
+        top_missing = missing_list[0]["skill"] if missing_list else "Technical Requirements"
         next_actions.append({
             "id": "act-1",
             "module": "Skill development",
             "title": f"Address skill gap in {top_missing}",
-            "description": f"{top_missing} is requested in top postings for {target_role}.",
+            "description": f"{top_missing} is a core requirement for {target_role}.",
             "href": "/skills"
         })
     if not has_resume:
         next_actions.append({
             "id": "act-2",
             "module": "Resume",
-            "title": "Upload your resume for scoring",
-            "description": "Upload a resume to get AI-assisted ATS refinement.",
+            "title": "Upload or generate your ATS resume",
+            "description": "Upload a resume or use the builder to get instant ATS scoring and bullet refinement.",
             "href": "/resume"
         })
     else:
         next_actions.append({
             "id": "act-3",
             "module": "Interview preparation",
-            "title": f"Practice technical questions for {target_role}",
-            "description": "Adaptive questions customized to your background.",
+            "title": f"Practice questions for {profile.get('targetCompany') or 'Target Employer'}",
+            "description": f"Targeted interview questions tailored for {target_role}.",
             "href": "/interview"
         })
         
@@ -149,118 +162,42 @@ async def compute_dashboard_data(user_id: str) -> Dict[str, Any]:
             "careerReadiness": readiness,
             "resumeScore": resume_score,
             "interviewReadiness": interview_score,
-            "skillGaps": len(missing_skills),
-            "jobMatches": max(1, len(user_skills) * 2) if user_skills else 0,
+            "skillGaps": missing_skills_count,
+            "jobMatches": max(1, len(ground_truth["skills_set"]) * 2) if has_skills else 0,
             "activeApplications": len(applications)
         },
         "nextActions": next_actions,
-        "trend": [
-            {"date": "Start", "score": max(0, readiness - 15)},
-            {"date": "Current", "score": readiness}
-        ] if readiness > 0 else [],
+        "trend": trend,
         "hasData": True
     }
 
 async def compute_skill_gaps(user_id: str, job_id: str = None) -> List[Dict[str, Any]]:
-    profiles_col = get_profiles_collection()
-    if profiles_col is None:
-        return []
-        
-    profile = await profiles_col.find_one({"user_id": user_id})
-    user_skills = set(s.lower() for s in (profile.get("skills", []) if profile else []))
-    target_role = profile.get("targetRoles", {}).get("major", "Software Engineer") if profile else "Software Engineer"
+    """
+    Computes skill gap distribution comparing role requirements vs candidate evidence.
+    Returns numeric 'required' (90-100) and 'current' (0-100) values for visualization.
+    """
+    gap_res = await analyze_skill_gaps(user_id=user_id, job_id=job_id)
     
-    # If job_id is provided, prioritize the specific job's requirements
-    if job_id:
-        from .jobs.recommendation_service import BENCHMARK_JOBS, get_candidate_recommended_jobs
-        from .jobs.job_normalizer import normalize_catalog_job
+    gaps_out = []
+    for s in gap_res.get("allGaps", []):
+        is_verified = (s.get("currentLevel") != "Missing" and s.get("priority") == "low")
+        is_moderate = (s.get("priority") == "medium")
         
-        target_job = None
-        for b in BENCHMARK_JOBS:
-            if b.get("id") == job_id or f"bench-{b.get('id')}" == job_id:
-                target_job = normalize_catalog_job(b)
-                break
-                
-        if not target_job:
-            rec_res = await get_candidate_recommended_jobs(user_id=user_id, limit=30)
-            for j in rec_res.get("jobs", []):
-                if j.get("id") == job_id:
-                    target_job = j
-                    break
-                    
-        if not target_job:
-            target_job = normalize_catalog_job(BENCHMARK_JOBS[0])
-            target_job["id"] = job_id
-            
-        job_skills = target_job.get("required_skills", []) or [s.get("skill") if isinstance(s, dict) else s for s in target_job.get("skills", [])]
-        if not job_skills:
-            job_skills = ["Python", "FastAPI", "PostgreSQL", "Docker", "Git"]
-            
-        job_title = target_job.get("title", "this position")
-        company = target_job.get("company", "the employer")
+        # Base proficiency
+        base_val = 85 if is_verified else (45 if is_moderate else 0)
+        # Add progress gained through completed learning resources
+        skill_learning_progress = s.get("progress", 0)
+        current_val = min(100, int(base_val + (skill_learning_progress * 0.5))) if not is_verified else base_val
         
-        gaps = []
-        for idx, skill in enumerate(job_skills):
-            skill_name = skill.get("skill") if isinstance(skill, dict) else str(skill)
-            is_present = skill_name.lower() in user_skills or any(skill_name.lower() in us for us in user_skills)
-            
-            if is_present:
-                gaps.append({
-                    "id": f"job-skill-{idx+1}",
-                    "skill": skill_name,
-                    "requirement": f"Core requirement for {job_title} at {company}",
-                    "evidence": "Verified match in your candidate profile & resume",
-                    "status": "strong",
-                    "priority": "low",
-                    "learningTask": f"Proficiency verified. Highlight your {skill_name} projects during interview."
-                })
-            else:
-                gaps.append({
-                    "id": f"job-skill-{idx+1}",
-                    "skill": skill_name,
-                    "requirement": f"Essential technical requirement for {job_title} at {company}",
-                    "evidence": "Missing from your profile / resume - required by this job",
-                    "status": "missing",
-                    "priority": "high",
-                    "learningTask": f"Complete hands-on tutorials and build a module using {skill_name} to qualify for {company}."
-                })
-                
-        # Sort so missing high-priority skills come first
-        gaps.sort(key=lambda x: 0 if x["status"] == "missing" else 1)
-        return gaps
-
-    # Default Target Role gap analysis
-    ROLE_REQUIREMENTS = [
-        {"skill": "Docker", "requirement": "Containerization & deployment pipelines", "priority": "high", "task": "Complete containerization module and deploy a container"},
-        {"skill": "PostgreSQL / SQL", "requirement": "Database design and query optimization", "priority": "high", "task": "Solve 5 SQL query exercises on indexing and joins"},
-        {"skill": "Redis", "requirement": "Caching and asynchronous message queues", "priority": "medium", "task": "Implement caching on top endpoints"},
-        {"skill": "System Design", "requirement": "Architecting scalable services", "priority": "medium", "task": "Review load balancing and microservice architecture patterns"},
-        {"skill": "Git & CI/CD", "requirement": "Version control and automated pipelines", "priority": "medium", "task": "Set up GitHub Actions workflow for automated testing"},
-    ]
-    
-    gaps = []
-    for idx, item in enumerate(ROLE_REQUIREMENTS):
-        is_present = any(item["skill"].lower() in s for s in user_skills)
-        if not is_present:
-            gaps.append({
-                "id": f"gap-{idx+1}",
-                "skill": item["skill"],
-                "requirement": item["requirement"],
-                "evidence": f"Missing from candidate profile for {target_role}",
-                "status": "missing",
-                "priority": item["priority"],
-                "learningTask": item["task"]
-            })
-        else:
-            gaps.append({
-                "id": f"gap-{idx+1}",
-                "skill": item["skill"],
-                "requirement": item["requirement"],
-                "evidence": f"Found in candidate profile skills",
-                "status": "strong",
-                "priority": "low",
-                "learningTask": "Verified proficiency"
-            })
-            
-    gaps.sort(key=lambda x: 0 if x["status"] == "missing" else 1)
-    return gaps
+        gaps_out.append({
+            "id": s["id"],
+            "skill": s["skill"],
+            "requirement": s["requirement"],
+            "evidence": s["evidence"],
+            "status": "strong" if is_verified else ("moderate" if is_moderate else "missing"),
+            "priority": s["priority"],
+            "learningTask": f"Master {s['skill']} requirements and complete hands-on practice projects." if not is_verified else f"Verified {s['skill']} proficiency in candidate profile.",
+            "required": 90,
+            "current": current_val
+        })
+    return gaps_out

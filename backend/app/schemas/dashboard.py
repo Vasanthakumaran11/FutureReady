@@ -17,8 +17,10 @@ class NextAction(BaseModel):
     href: str
 
 class ReadinessTrendPoint(BaseModel):
-    date: str
-    score: int
+    date: str = ""
+    score: int = 0
+    week: str = ""
+    readiness: int = 0
 
 class DashboardSummaryOut(BaseModel):
     summary: SummaryMetrics
@@ -34,3 +36,5 @@ class SkillGapOut(BaseModel):
     status: str # "strong", "moderate", "missing"
     priority: str # "high", "medium", "low"
     learningTask: str
+    required: int = 100
+    current: int = 0

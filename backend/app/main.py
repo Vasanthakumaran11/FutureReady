@@ -28,6 +28,11 @@ except Exception:
 async def lifespan(app: FastAPI):
     # Startup
     await connect_to_mongo()
+    try:
+        from .services.skills import seed_skill_database
+        await seed_skill_database()
+    except Exception as e:
+        print(f"Notice: Skill database seeding skipped/failed: {e}")
     yield
     # Shutdown
     await close_mongo_connection()

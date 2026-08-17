@@ -92,3 +92,18 @@ def get_interviews_collection():
     if db_instance.db is not None:
         return db_instance.db["interviews"]
     return None
+
+def get_role_skills_collection():
+    if db_instance.db is not None:
+        return db_instance.db["role_skills"]
+    return None
+
+def get_learning_resources_collection():
+    if db_instance.db is not None:
+        return db_instance.db["learning_resources"]
+    return None
+
+def get_learning_progress_collection():
+    if db_instance.db is not None:
+        return db_instance.db["learning_progress"]
+    return None
