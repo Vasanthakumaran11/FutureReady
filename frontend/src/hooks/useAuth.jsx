@@ -4,17 +4,42 @@ import { authService } from "@/services/auth/authService";
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+  // Synchronous initialization from localStorage prevents any guest account flicker upon refresh
+  const [user, setUser] = useState(() => {
+    try {
+      const cached = localStorage.getItem("futureready_user");
+      return cached ? JSON.parse(cached) : null;
+    } catch {
+      return null;
+    }
+  });
   const [ready, setReady] = useState(false);
+
+  const saveUser = (u) => {
+    setUser(u);
+    try {
+      if (u) {
+        localStorage.setItem("futureready_user", JSON.stringify(u));
+      } else {
+        localStorage.removeItem("futureready_user");
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
     async function initAuth() {
       try {
         const currentUser = await authService.getCurrentUser();
-        if (mounted) setUser(currentUser);
+        if (mounted) {
+          saveUser(currentUser);
+        }
       } catch {
-        if (mounted) setUser(null);
+        if (mounted) {
+          saveUser(null);
+        }
       } finally {
         if (mounted) setReady(true);
       }
@@ -27,31 +52,31 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (credentials) => {
     const loggedUser = await authService.login(credentials);
-    setUser(loggedUser);
+    saveUser(loggedUser);
     return loggedUser;
   }, []);
 
   const register = useCallback(async (payload) => {
     const newUser = await authService.register(payload);
-    setUser(newUser);
+    saveUser(newUser);
     return newUser;
   }, []);
 
   const loginWithGoogle = useCallback(async (payload) => {
     const loggedUser = await authService.loginWithGoogle(payload);
-    setUser(loggedUser);
+    saveUser(loggedUser);
     return loggedUser;
   }, []);
 
   const logout = useCallback(async () => {
     await authService.logout();
-    setUser(null);
+    saveUser(null);
   }, []);
 
   const value = useMemo(
     () => ({
       user,
-      status: !ready ? "loading" : user ? "authenticated" : "anonymous",
+      status: !ready && !user ? "loading" : user ? "authenticated" : "anonymous",
       login,
       register,
       loginWithGoogle,

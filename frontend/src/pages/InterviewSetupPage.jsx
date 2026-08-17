@@ -1,10 +1,9 @@
 import { useNavigate } from "react-router-dom";
 import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
-import { JourneyStrip } from "@/components/common/JourneyStrip";
-import { BackendNotice, PageHeader, SectionCard } from "@/components/common/page";
+import { PageHeader, SectionCard } from "@/components/common/page";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -26,17 +25,38 @@ export function InterviewSetupPage() {
   const [optional1, setOptional1] = useState("Python Developer");
   const [optional2, setOptional2] = useState("Full Stack Developer");
   const [company, setCompany] = useState("");
-  const [focus, setFocus] = useState(["dsa", "technical", "project"]);
+  const [focus, setFocus] = useState(["dsa", "technical", "project", "coding", "hr"]);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    async function loadCurrent() {
+      try {
+        const setup = await interviewService.getSetup();
+        if (setup?.role) setRole(setup.role);
+        if (setup?.company && setup.company !== "Target Company") setCompany(setup.company);
+        if (setup?.focusAreas) setFocus(setup.focusAreas);
+      } catch {}
+    }
+    loadCurrent();
+  }, []);
 
   const toggle = (id) => setFocus((f) => (f.includes(id) ? f.filter((x) => x !== id) : [...f, id]));
 
   const save = async () => {
     setSaving(true);
-    await interviewService.saveSetup({ role, company: company || "General preparation", focus });
-    setSaving(false);
-    toast.success("Preparation plan configured");
-    navigate("/interview");
+    try {
+      await interviewService.saveSetup({
+        role,
+        company: company.trim() || "Google",
+        focus,
+      });
+      toast.success("Preparation plan configured");
+      navigate("/interview");
+    } catch {
+      toast.error("Failed to save configuration");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -71,7 +91,7 @@ export function InterviewSetupPage() {
           <Label htmlFor="company">Company</Label>
           <Input
             id="company"
-            placeholder="e.g. Google — or leave blank"
+            placeholder="e.g. Google, Microsoft, Stripe..."
             value={company}
             onChange={(e) => setCompany(e.target.value)}
           />
@@ -99,7 +119,9 @@ export function InterviewSetupPage() {
           {saving ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
           Save configuration
         </Button>
-        <BackendNotice />
+        <Button variant="outline" onClick={() => navigate("/interview")}>
+          Cancel
+        </Button>
       </div>
     </AppShell>
   );

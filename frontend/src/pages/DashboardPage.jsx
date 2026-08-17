@@ -307,25 +307,6 @@ export function DashboardPage() {
           </div>
         )}
       </SectionCard>
-
-      {/* Continuous Improvement Loop */}
-      <SectionCard
-        title="Continuous improvement loop"
-        description="Every completed task feeds back into your readiness score."
-      >
-        <ol className="grid gap-2.5 sm:grid-cols-5">
-          {LOOP.map((stage, i) => (
-            <li
-              key={stage}
-              className="rounded-sm border border-border bg-surface-hover/70 p-3.5 transition-colors"
-            >
-              <p className="text-eyebrow text-tertiary">Step {i + 1}</p>
-              <p className="mt-1 text-xs font-semibold text-foreground sm:text-sm">{stage}</p>
-              <ProgressBar value={((i + 1) / LOOP.length) * 100} className="mt-2.5" label={stage} />
-            </li>
-          ))}
-        </ol>
-      </SectionCard>
     </AppShell>
   );
 }

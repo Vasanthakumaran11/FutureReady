@@ -11,7 +11,6 @@ import { ResumeCreatePage } from "@/pages/ResumeCreatePage";
 import { InterviewIndexPage } from "@/pages/InterviewIndexPage";
 import { InterviewSetupPage } from "@/pages/InterviewSetupPage";
 import { InterviewDSAPage } from "@/pages/InterviewDSAPage";
-import { InterviewCodingPage } from "@/pages/InterviewCodingPage";
 import { InterviewTechnicalPage } from "@/pages/InterviewTechnicalPage";
 import { InterviewProjectPage } from "@/pages/InterviewProjectPage";
 import { InterviewHRPage } from "@/pages/InterviewHRPage";
@@ -49,14 +48,14 @@ export default function App() {
             <Route path="/resume/analyze" element={<ResumeAnalyzePage />} />
             <Route path="/resume/create" element={<ResumeCreatePage />} />
 
-            {/* Interview Module */}
+            {/* Interview Module (4 Core Sections) */}
             <Route path="/interview" element={<InterviewIndexPage />} />
             <Route path="/interview/setup" element={<InterviewSetupPage />} />
             <Route path="/interview/dsa" element={<InterviewDSAPage />} />
-            <Route path="/interview/coding" element={<InterviewCodingPage />} />
             <Route path="/interview/technical" element={<InterviewTechnicalPage />} />
             <Route path="/interview/project" element={<InterviewProjectPage />} />
             <Route path="/interview/hr" element={<InterviewHRPage />} />
+            <Route path="/interview/coding" element={<Navigate to="/interview/dsa" replace />} />
 
             {/* Skills Module */}
             <Route path="/skills" element={<SkillsPage />} />

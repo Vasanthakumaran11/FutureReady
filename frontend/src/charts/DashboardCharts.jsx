@@ -59,8 +59,13 @@ function Frame({ children, height = 220 }) {
   );
 }
 
-export function ReadinessTrendChart({ data }) {
+export function ReadinessTrendChart({ data = [] }) {
   const t = useChartTheme();
+
+  const normalizedData = (data || []).map((d, i) => ({
+    week: d.week || d.date || `Milestone ${i + 1}`,
+    readiness: typeof d.readiness === "number" ? d.readiness : (typeof d.score === "number" ? d.score : 0)
+  }));
 
   const axisProps = {
     stroke: t.tertiary,
@@ -85,7 +90,7 @@ export function ReadinessTrendChart({ data }) {
 
   return (
     <Frame>
-      <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+      <AreaChart data={normalizedData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
         <defs>
           <linearGradient id="readinessFill" x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor={t.accent} stopOpacity={0.2} />
@@ -110,8 +115,24 @@ export function ReadinessTrendChart({ data }) {
   );
 }
 
-export function SkillGapChart({ data }) {
+export function SkillGapChart({ data = [] }) {
   const t = useChartTheme();
+
+  const normalizedData = (data || []).map((d) => {
+    let currentVal = typeof d.current === "number" ? d.current : 0;
+    if (d.current === undefined || d.current === null) {
+      if (d.status === "strong") currentVal = 85;
+      else if (d.status === "moderate") currentVal = 45;
+      else currentVal = 0;
+    }
+    const requiredVal = typeof d.required === "number" ? d.required : 90;
+    return {
+      ...d,
+      skill: d.skill || d.name || "",
+      required: requiredVal,
+      current: currentVal
+    };
+  });
 
   const axisProps = {
     stroke: t.tertiary,
@@ -136,7 +157,7 @@ export function SkillGapChart({ data }) {
 
   return (
     <Frame height={260}>
-      <BarChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+      <BarChart data={normalizedData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke={t.grid} vertical={false} />
         <XAxis
           dataKey="skill"

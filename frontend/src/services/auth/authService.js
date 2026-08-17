@@ -9,6 +9,11 @@ export const authService = {
     if (res?.session_token) {
       setSessionToken(res.session_token);
     }
+    if (res?.user) {
+      try {
+        localStorage.setItem("futureready_user", JSON.stringify(res.user));
+      } catch {}
+    }
     return res.user;
   },
 
@@ -19,6 +24,11 @@ export const authService = {
     });
     if (res?.session_token) {
       setSessionToken(res.session_token);
+    }
+    if (res?.user) {
+      try {
+        localStorage.setItem("futureready_user", JSON.stringify(res.user));
+      } catch {}
     }
     return res.user;
   },
@@ -31,6 +41,11 @@ export const authService = {
     if (res?.session_token) {
       setSessionToken(res.session_token);
     }
+    if (res?.user) {
+      try {
+        localStorage.setItem("futureready_user", JSON.stringify(res.user));
+      } catch {}
+    }
     return res.user;
   },
 
@@ -38,9 +53,18 @@ export const authService = {
     const token = getSessionToken();
     if (!token) return null;
     try {
-      return await apiRequest("/auth/me");
+      const user = await apiRequest("/auth/me");
+      if (user) {
+        try {
+          localStorage.setItem("futureready_user", JSON.stringify(user));
+        } catch {}
+      }
+      return user;
     } catch {
       setSessionToken(null);
+      try {
+        localStorage.removeItem("futureready_user");
+      } catch {}
       return null;
     }
   },
@@ -52,6 +76,9 @@ export const authService = {
       // ignore
     } finally {
       setSessionToken(null);
+      try {
+        localStorage.removeItem("futureready_user");
+      } catch {}
     }
   },
 };
